@@ -271,6 +271,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                   try {
                     _currentHeight =
                         double.tryParse(height.toString()) ?? widget.minHeight;
+                        print('The resizing value is $height');
                   } catch (e) {
                     _currentHeight = widget.minHeight;
                   } finally {
@@ -405,6 +406,31 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                     setState(() {});
                   }
                 }),
+            DartCallback(
+              name: 'GetVideoTracking',
+              callBack: (timing){
+                  try {
+                    if(timing != null) {
+                         print('The video timing is $timing');
+                    } else {
+                      print('nothing is sent');
+                    }
+                    
+                  } catch (e){
+                    debugPrint(e.toString());
+                  }
+              }),
+
+            DartCallback(
+              name: 'VideoStateChange',
+              callBack: (msg) {
+                try {
+                  print(msg.toString());
+                } catch (e){
+                  debugPrint(e.toString());
+                }
+              }
+            )
           },
           webSpecificParams: const WebSpecificParams(
             printDebugInfo: false,
@@ -555,6 +581,13 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
     return await _webviewController.callJsMethod("clearHistory", []);
   }
 
+    /// a formatted text upon selection
+  Future _formatText() async {
+    return await _webviewController.callJsMethod("setFormatText", []);
+  }
+  ///get page
+   // String get quillPage => _getQuillPage(width: MediaQuery.of(context).size.width);
+
   /// This method generated the html code that is required to render the quill js editor
   /// We are rendering this html page with the help of webviewx and using the callbacks to call the quill js apis
   String _getQuillPage({required double width}) {
@@ -568,6 +601,8 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
        <!-- Include the Quill library --> 
         <script>
         $_quillJsScript
+        </script>
+        <script src = "https://www.youtube.com/iframe_api">
         </script>
         <style>
         /*!
@@ -963,6 +998,141 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                   }
               };
               
+              let BlockEmbed = Quill.import('blots/block/embed');
+
+              class IframeBlot extends BlockEmbed {
+                static create(value) {
+                 let node = super.create(value);
+                 node.setAttribute('id', 'videoframe');
+                 node.setAttribute('width', value.width || 520);
+                 node.setAttribute('height', value.height || 300);
+                 node.setAttribute('src', `\${value.src}?enablejsapi=1`);
+                 node.setAttribute('allowfullscreen',true);
+                 
+                   node.addEventListener('load', ()=> {
+                  IframeBlot.addYoutubeTracking(node);
+                  });
+
+                 return node;                
+                }
+
+                static value(node){
+                return {
+                 width: node.getAttribute('width'),
+                 height: node.getAttribute('height'),
+                 src: node.getAttribute('src')
+                };
+                }
+
+                   static addYoutubeTracking(node) {
+             const player = new YT.Player(node.id, {
+              events: {
+                'onReady': this.onPlayerReady,
+                'onStateChange': this.onPlayerStateChange
+              }
+             });
+            }
+
+                  static onPlayerReady(event) {
+            console.log('YouTube Player is ready.');
+            }
+
+                   static onPlayerStateChange(event) {
+             if(event.data == YT.PlayerState.PLAYING) {
+              IframeBlot.trackProgress(event.target);
+             } else if (event.data == YT.PlayerState.ENDED){
+                console.log('Video has ended.');
+             }
+            }
+             
+             static trackProgress(player) {
+                const duration = player.getDuration();
+                const trackInterval = setInterval(() => {
+                if(player.getPlayerState() === YT.PlayerState.PLAYING) {
+                const currentTime = player.getCurrentTime();
+                const progress = (currentTime/duration) * 100;
+                  if($kIsWeb){
+                    GetVideoTracking(progress.toFixed(2));
+                  } else {
+                    GetVideoTracking.postMessage(progress.toFixed(2));
+                  }
+                } else {
+                 clearInterval(trackInterval);
+                }
+                }, 1000);
+                }
+              }
+              IframeBlot.blotName = 'regex';
+              IframeBlot.tagName = 'iframe';
+              Quill.register(IframeBlot);
+
+              class VideoBlot extends BlockEmbed{
+               static create(value) {
+                 let node = super.create(value);
+                 node.setAttribute('id', 'videoElement');
+                 node.setAttribute('width', value.width || 520);
+                 node.setAttribute('height', value.height || 300);
+                 node.setAttribute('controls', true);
+
+                 let source = document.createElement('source');
+                 source.setAttribute('src', value.url);
+                 source.setAttribute('type', 'video/mp4');
+
+        node.addEventListener('timeupdate', ()=> {
+         const currentTime = node.currentTime;
+         const duration = node.duration;
+         const progress = (currentTime / duration) * 100;
+         if($kIsWeb) {
+          GetVideoTracking(progress.toFixed(2));
+         }else {
+          GetVideoTracking.postMessage(progress.toFixed(2));
+          }
+        });
+        
+        node.addEventListener('play', ()=> {
+         if($kIsWeb){
+          VideoStateChange('Video is playing');
+         } else {
+          VideoStateChange.postMessage('Video is playing');
+         }
+        });
+
+        node.addEventListener('pause', () => {
+         if($kIsWeb){
+          VideoStateChange('Video is paused');
+         } else {
+          VideoStateChange.postMessage('Video is paused');
+         }
+         });
+
+          node.addEventListener('ended', () => {
+         if($kIsWeb){
+          VideoStateChange('Video has ended');
+         } else {
+          VideoStateChange.postMessage('Video has ended');
+         }
+         });
+
+                 node.appendChild(source);
+                
+                return node;
+               }
+
+               static value(node) {
+               let source = node.querySelector('source');
+
+                return {
+                 width: node.getAttribute('width'),
+                 height: node.getAttribute('height'),
+                 url: source ? source.getAttribute('src') : '',
+                };
+               }
+              }
+              VideoBlot.blotName = 'video';
+              VideoBlot.tagName = 'video';
+              Quill.register(VideoBlot);
+
+
               let Embed = Quill.import('blots/embed');
               
               class Breaker extends Embed {
@@ -1253,6 +1423,31 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
               quilleditor.enable(isEnabled);
               return '';
             }
+
+
+         
+    function setFormatText(){
+     try {
+        var range = quilleditor.getSelection(true);
+        if(range) {
+            if(range.length == 0){
+                quilleditor.removeFormat(range.index, quilleditor.root.innerHTML.length)
+            } else {
+                quilleditor.removeFormat(range.index, range.length);
+                quilleditor.formatText(range.index, range.length, {
+                  'background': '#92a8d1'
+                });
+            }
+        }
+
+     } catch(e){
+          console.log('setFormat',e);
+     }
+     //expected to return a Delta which I can print it to debug it
+     return '';
+    }
+
+
             
             function setFormat(format, value) {
             try{
@@ -1555,6 +1750,11 @@ class QuillEditorController {
   void clearHistory() async {
     await _editorKey?.currentState?._clearHistory();
   }
+
+  /// [formatText] method to format the selected text with background Color
+  void formatText() async {
+    await _editorKey?.currentState?._formatText();    
+  } 
 }
 
 ///[SelectionModel] a model class for selection range
