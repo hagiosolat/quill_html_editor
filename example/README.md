@@ -52,12 +52,12 @@ WebViewX(
 
   ## 2. A walk through on how Dart communicate with Javascript using webviewX .
    - WebviewX  has controller property to interact with the Javascript codes
-```
+```dart
 WebviewXcontroller _webviewController;
 ```
 
 - The controller has a method called callJsmethod
-```
+```dart
 _webviewController.callJsMethod('name of the function in JavaScript', []);
 ```
 - 
