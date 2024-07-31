@@ -6,7 +6,7 @@ Of course, video tag cannot render Youtube videos. Hence, Iframe was quill.js de
 
 In the quill_html_editor class; webviewx class was used to render the javascript code.
 
-```
+```dart
 WebViewX(
           key: ValueKey(widget.controller.toolBarKey.hashCode.toString()),
           initialContent: _initialContent,
@@ -64,7 +64,7 @@ _webviewController.callJsMethod('name of the function in JavaScript', []);
 
 ## 3. A walk through on how JavaScript communicate with Dart Code
    - A dartCallBacks property in the webviewX is a set of DartCallback class, this class is used to receive data from the JavaScript side to the Dart side.
-   ```
+```dart
    class DartCallback {
   /// Callback's name
   ///
@@ -89,7 +89,7 @@ _webviewController.callJsMethod('name of the function in JavaScript', []);
    ```
 
  - A method at the JavaScript side is used to communicate to the Dart side.
- ```
+ ```javascript
    node.addEventListener('timeupdate', ()=> {
          const currentTime = node.currentTime;
          const duration = node.duration;
@@ -103,7 +103,7 @@ _webviewController.callJsMethod('name of the function in JavaScript', []);
  ```
 - The code below gets the data at the dart side using the DartCallback class.That is One of the object in a set of DartCallback
   To send data to the Dart side on mobile version,  **postMessage** method is used.
-```
+```dart
    DartCallback(
               name: 'GetVideoTracking',
               callBack: (timing){
@@ -123,7 +123,7 @@ _webviewController.callJsMethod('name of the function in JavaScript', []);
 
 
 ### I. Javascript code that was added to render Youtube videos using Iframe element; to track the progress of the video.
-```
+```javascript
                 let BlockEmbed = Quill.import('blots/block/embed');
 
               class IframeBlot extends BlockEmbed {
@@ -193,7 +193,7 @@ _webviewController.callJsMethod('name of the function in JavaScript', []);
               Quill.register(IframeBlot);
 ```
 ### II. Javascript code to render Html video tag, track the video progress
-```
+```javascript
                 let BlockEmbed = Quill.import('blots/block/embed');
                class VideoBlot extends BlockEmbed{
                static create(value) {
@@ -264,7 +264,7 @@ _webviewController.callJsMethod('name of the function in JavaScript', []);
 ## 2. Other changes that was made is highlighting text when comment is made for the package on mobile version.
   **setFormat** function was edited to re-format the text when a comment is made on a text.
 
-  ```
+  ```javascript
      function setFormat(format, value, index, length) {
                index = index || -1;
                length = length || 0;
