@@ -568,14 +568,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
   Future _clearHistory() async {
     return await _webviewController.callJsMethod("clearHistory", []);
   }
-
-    /// a formatted text upon selection
-  Future _formatText() async {
-    return await _webviewController.callJsMethod("setFormatText", []);
-  }
-  ///get page
-   // String get quillPage => _getQuillPage(width: MediaQuery.of(context).size.width);
-
+  
   /// This method generated the html code that is required to render the quill js editor
   /// We are rendering this html page with the help of webviewx and using the callbacks to call the quill js apis
   String _getQuillPage({required double width}) {
@@ -1723,11 +1716,6 @@ class QuillEditorController {
   void clearHistory() async {
     await _editorKey?.currentState?._clearHistory();
   }
-
-  /// [formatText] method to format the selected text with background Color
-  void formatText() async {
-    await _editorKey?.currentState?._formatText();    
-  } 
 }
 
 ///[SelectionModel] a model class for selection range
