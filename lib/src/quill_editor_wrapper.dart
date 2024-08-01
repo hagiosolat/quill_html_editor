@@ -213,7 +213,6 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
           if (widget.loadingBuilder != null) {
             return widget.loadingBuilder!(context);
           } else {
-             //return const SizedBox.shrink();
             return SizedBox(
               height: widget.minHeight,
               child: const Center(
@@ -439,6 +438,18 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
             androidEnableHybridComposition: true,
           ),
         ),
+         Visibility(
+            visible: !_editorLoaded,
+            child: widget.loadingBuilder != null
+                ? widget.loadingBuilder!(context)
+                : SizedBox(
+                    height: widget.minHeight,
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 0.3,
+                      ),
+                    ),
+                  ))
       ],
     );
   }
@@ -568,7 +579,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
   Future _clearHistory() async {
     return await _webviewController.callJsMethod("clearHistory", []);
   }
-  
+
   /// This method generated the html code that is required to render the quill js editor
   /// We are rendering this html page with the help of webviewx and using the callbacks to call the quill js apis
   String _getQuillPage({required double width}) {

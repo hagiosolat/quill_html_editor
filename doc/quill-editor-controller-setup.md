@@ -106,7 +106,7 @@ Method to clear the editor history stack
 Can be used to listen to the text changes, as defined below
 ```dart
    controller.onTextChanged((text) {
-debugPrint(' to $text');
+debugPrint('listening to $text');
 });
 ```
 
