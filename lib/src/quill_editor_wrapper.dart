@@ -738,35 +738,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
         }
         .ql-tooltip{
           display:none; 
-        }
-        .thumbnail-wrapper {
-          position: relative;
-          display: inline-block;
-          cursor:pointer;
-          width:100%;
-        }
-        .video-thumbnail {
-         width: 100%;
-         height: auto;
-         display:block;
-        }
-        .play-button {
-          position: absolute;
-          width: 60px;
-          height: 60px;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background-color: rgba(0, 0, 0, 0.6);
-          color: white;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          font-size: 70%;
-          padding: 20px;
-          border-radius: 50%;
-          cursor: pointer;
-        }       
+        }   
         .ql-editor.ql-blank:focus::before {
           content: '';
           }
@@ -1099,10 +1071,113 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                       }
                   }
               };
-              
-            /*  let BlockEmbed = Quill.import('blots/block/embed');
+                            //Add required CSS
 
-              class IframeBlot extends BlockEmbed {
+              const styles = `
+                 .video-thumbnail-container {
+                  position: relative;
+                  display: inline-block;
+                  margin: 10px 0;
+                  }
+
+                  .video-thumbnail-container img {
+                     max-width: 100%;
+                     height: auto;
+                     display: block;
+                    }
+
+                    .play-button {
+                      position: absolute;
+                      top: 50%;
+                      left: 50%;
+                      transform: translate(-50%, -50%);
+                      width: 60px;
+                      height: 60px;
+                      background-color: rgba(0, 0, 0, 0.7);
+                      border-radius: 50%;
+                      cursor: pointer;
+                      transition: background-color 0.3s;
+                    
+                    }
+
+                    .play-button::after {
+                      content: '';
+                      position: absolute;
+                      top: 50%;
+                      left: 54%;
+                      transform: translate(-50%, -50%);
+                      width: 0;
+                      height: 0;
+                      border-top: 15px solid transparent;
+                      border-bottom: 15px solid transparent;
+                      border-left: 22px solid white;
+                    }
+
+                    .play-button:hover {
+                     background-color: rgba(0, 0, 0, 0.9);                    
+                    }`;
+                  
+                 const styleSheet = document.createElement('style');
+                 styleSheet.textContent = styles;
+                 document.head.appendChild(styleSheet);
+
+            //  const VideoEmbed = Quill.import('blots/block/embed');
+
+            /*  class VideoThumbnail extends VideoEmbed {
+              
+                static create(value) {
+                 const node = super.create();
+                 node.classList.add('video-thumbnail-container');
+
+
+                 //Create the image element
+                 const img = document.createElement('img');
+                 img.setAttribute('src', value.src);
+                 img.setAttribute('alt', value.alt || 'video thumbnail');
+
+
+                //Create the play button overlay
+                img.setAttribute('src', value.src);
+                img.setAttribute('alt', value.alt || 'video thumbnail');
+
+
+                //Create the play button overlay
+                const playButton = document.createElement('div');
+                playButton.classList.add('play-button');
+
+                node.appendChild(img);
+                node.appendChild(playButton);
+
+                if(value.videoUrl){
+                 node.setAttribute('data-video-url', value.videoUrl);
+                
+                }
+                return node;
+                }
+
+                static value(node){
+                  return {
+                   src: node.querySelector('img').getAttribute('src'),
+                   videoUrl: node.getAttribute('data-video-url'),
+                   alt: node.querySelector('img').getAttribute('alt')
+                  
+                  };
+                
+                }
+              
+              }
+
+              VideoThumbnail.blotName = 'video';
+              VideoThumbnail.tagName = 'video';
+
+
+              Quill.register(VideoThumbnail);*/
+
+
+                  
+            // let BlockEmbed = Quill.import('blots/block/embed');
+
+           /*   class IframeBlot extends BlockEmbed {
                 static create(value) {
                  let node = super.create(value);
                  node.setAttribute('id', 'videoframe');
@@ -1235,6 +1310,17 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
               VideoBlot.blotName = 'video';
               VideoBlot.tagName = 'video';
               Quill.register(VideoBlot);  */
+
+              
+              let Block = Quill.import('blots/block');
+
+              class Division extends Block {
+               static tagName = 'div';
+               static blotName = 'division';
+              }
+              Quill.register(Division);
+
+
               let Embed = Quill.import('blots/embed');
               
               class Breaker extends Embed {
@@ -1424,11 +1510,11 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
             
            async function setHtmlText(htmlString) {
             try{
-                const modifiedHtml = await replaceVideoWithThumbnail(htmlString);
+               const modifiedHtml = await replaceVideoWithThumbnail(htmlString);
                 console.log('*****&&&****&&&*****&&&*****&&&&&******&&&******&&&&&*****&&&&****&&&&****');
                 console.log(`\${modifiedHtml}`);
                 console.log('*****&&&****&&&*****&&&*****&&&&&******&&&******&&&&&*****&&&&****&&&&****');
-               quilleditor.enable(false);
+                 quilleditor.enable(false);
                quilleditor.clipboard.dangerouslyPasteHTML(modifiedHtml);  
                //quilleditor.clipboard.dangerouslyPasteHTML(htmlString);   
             }catch(e){
@@ -1538,43 +1624,62 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                 const videoSrc = video.getAttribute('src') || video.querySelector('source').getAttribute('src');
                 if(videoSrc){
                     try {
-                      const thumbnailUrl = await generateThumbnail(videoSrc);
+                          //Create an <img> tag with the thumbnail URL
 
-                      //Create an <img> tag with the thumbnail URL
-                      const img = document.createElement('img');
-                      img.setAttribute('src', thumbnailUrl);
-                      img.setAttribute('alt', 'Video Thumbnail');
-                      img.classList.add('video-thumbnail');
+                                    const thumbnailUrl = await generateThumbnail(videoSrc);
 
-                      //Create a div to wrap the img and the play button
-                      const wrapperDiv = document.createElement('div');
-                      wrapperDiv.classList.add('thumbnail-wrapper');
+                                  const img = document.createElement('img');
+                                  img.setAttribute('src', thumbnailUrl);
+                                  img.setAttribute('alt', 'Video Thumbnail');
+                                  img.classList.add('video-thumbnail-container');
 
-                      //Append the img to the wrapper div
-                      wrapperDiv.appendChild(img);
+                                img.style.width = '40px';
+                                img.style.height = 'auto';
+                                img.style.display = 'block';
 
-                      //Create the play button inside its own div
-                      const playButtonDiv = document.createElement('div');
-                      playButtonDiv.classList.add('play-button-container');
-                    
+                                //Create a div to wrap the img and the play button
+                                  const wrapperDiv = document.createElement('div');
+                                  wrapperDiv.classList.add('thumbnail-wrapper');
 
-                      const playButton = document.createElement('div');
-                        playButton.innerHTML = '&#9658';
+                                  // Inline styles for the wrapper div
+                                    wrapperDiv.style.position = 'relative';
+                                    // wrapperDiv.style.display = 'inline-block';
+                                    wrapperDiv.style.backgroundColor = 'blue',
+                                    wrapperDiv.style.width = '50%'
 
-                      //Append the play button icon to the playButtonDiv
-                      playButtonDiv.appendChild(playButton);
-                      
-                      //Append the playButtonDiv to the wrapperDiv after the img
-                      wrapperDiv.appendChild(playButtonDiv);
 
-                      //Create a <p> tag to be the parent of the img tag
-                      const paragraph = document.createElement('p');
-                    
-                    //Append the img tag as a child of the paragraph
-                    paragraph.appendChild(wrapperDiv);
+                                    const playButton = document.createElement('div');
+                                    playButton.classList.add('play-button');
+                                    playButton.innerHTML = '&#9658';
+                                    playButton.style.position = 'fixed';
+                                    playButton.style.top = '50px';
+                                    playButton.style.left = '50%';
+                                    playButton.style.transform = 'translate(-50%, -50%)';
+                                    playButton.style.fontSize = '150px';
+                                    playButton.style.color = 'red';
+                                      playButton.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                                      playButton.style.borderRadius = '50%';
+                                      playButton.style.padding = '20px';
+                                      playButton.style.cursor = 'pointer';
 
-                     //Replace the <video> tag with the <img> tag
-                      video.parentNode.replaceChild(paragraph, video);
+
+
+                                    //Append the playButtonDiv to the wrapperDiv after the img
+                                    wrapperDiv.appendChild(img);
+                                    wrapperDiv.appendChild(playButton);
+
+                                    //Create a <p> tag to be the parent of the img tag
+                                  //const paragraph = document.createElement('p');
+
+                                  //Append the img tag as a child of the paragraph
+                                  //paragraph.appendChild(wrapperDiv);
+
+                                  //Replace the <video> tag with the <img> tag
+
+
+                                  video.parentNode.replaceChild(wrapperDiv, video);
+
+                            
                             } catch(error) {
                      console.log('Error generating thumbnail:', error);
                     }

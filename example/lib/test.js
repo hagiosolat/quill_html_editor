@@ -1,30 +1,3 @@
-async function generateVideoThumbnail(videoUrl) {
-    // Code to extract a thumbnail from a custom video source (like canvas)
-    console.log('trying to generate the video thumbnail');
-
-    return new Promise((resolve) => {
-        const video = document.createElement('video');
-        video.src = videoUrl;
-        video.crossOrigin = 'anonymous';
-        video.addEventListener('loadeddata', () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const context = canvas.getContext('2d');
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const thumbnailUrl = canvas.toDataURL();
-            console.log(`thumbnail Url inside the function generateVideoThumbnail \${thumbnailUrl}`);
-            resolve(thumbnailUrl);
-        });
-
-        video.addEventListener('error', (err) => {
-            reject('Error loading video for thumbnail generation');
-        });
-    });
-}
-
-
-
 ///Generate the video List and convert it to a container with the thumbnail
 async function replaceVideoWithThumbnail(htmlContent) {
     //Create a temporary element to hold the HTML content
@@ -33,55 +6,123 @@ async function replaceVideoWithThumbnail(htmlContent) {
 
     const videos = tempDiv.querySelectorAll('video');
 
-    videos.forEach(video => {
-        const sourceElement = video.querySelector('source');
-        let videoSrc = null;
-
-        if (sourceElement) {
-            videoSrc = sourceElement.getAttribute('src');
-        } else {
-            videoSrc = video.getAttribute('src');
-        }
+    for (let video of videos) {
+        const videoSrc = video.getAttribute('src') || video.querySelector('source').getAttribute('src');
         if (videoSrc) {
+            try {
+                const thumbnailUrl = await generateThumbnail(videoSrc);
 
-            generateVideoThumbnail(videoSrc)
-                .then(thumbnailUrl => {
-                    console.log(`\${thumbnailUrl}`);
-                    //Create an <img> tag with the thumbnail URL
-                    const img = document.createElement('img');
-                    img.setAttribute('src', thumbnailUrl);
-                    img.setAttribute('alt', 'Video Thumbnail');
-                    img.classList.add('video-thumbnail');
+                //Create an <img> tag with the thumbnail URL
+                const img = document.createElement('img');
+                img.setAttribute('src', thumbnailUrl);
+                img.setAttribute('alt', 'Video Thumbnail');
+                img.classList.add('video-thumbnail');
 
-                    //Replace the <video> tag with the <img> tag
-                    video.parentNode.replaceChild(img, video);
-                });
+                img.style.width = '40px';
+                img.style.height = 'auto';
+                img.style.display = 'block';
+
+                //Create a div to wrap the img and the play button
+                const wrapperDiv = document.createElement('div');
+                wrapperDiv.classList.add('thumbnail-wrapper');
+
+                // Inline styles for the wrapper div
+                wrapperDiv.style.position = 'relative';
+                // wrapperDiv.style.display = 'inline-block';
+                wrapperDiv.style.backgroundColor = 'blue';
+                wrapperDiv.style.width = '50%'
+                wrapperDiv.style.height = '600px';
+
+
+                const playButton = document.createElement('div');
+                playButton.classList.add('play-button');
+                playButton.innerHTML = '&#9658';
+                playButton.style.position = 'fixed';
+                playButton.style.top = '50px';
+                playButton.style.left = '50%';
+                playButton.style.transform = 'translate(-50%, -50%)';
+                playButton.style.fontSize = '150px';
+                playButton.style.color = 'red';
+                playButton.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                playButton.style.borderRadius = '50%';
+                playButton.style.padding = '20px';
+                playButton.style.cursor = 'pointer';
+
+
+
+                //Append the playButtonDiv to the wrapperDiv after the img
+                wrapperDiv.appendChild(img);
+                wrapperDiv.appendChild(playButton);
+
+
+                tempDiv.appendChild(wrapperDiv);
+                //video.appendChild(wrapperDiv);
+                // video.parentNode.replaceChild(wrapperDiv, video);
+            } catch (error) {
+                console.log('Error generating thumbnail:', error);
+            }
         }
-    });
+    }
     return tempDiv.innerHTML; //Return the modified HTML             
 }
 
 
 
-videos.forEach(video => {
-    const sourceElement = video.querySelector('source');
-    let videoSrc = null;
-    if (sourceElement) {
-        videoSrc = sourceElement.getAttribute('src');
-        console.log(`the source attribute is \${videoSrc}`);
-    } else {
-        videoSrc = video.getAttribute('src');
-    }
-    if (videoSrc) {
-        generateVideoThumbnail(videoSrc).then(thumbnailUrl => {
-            //Create an <img> tag with the thumbnail URL
-            const img = document.createElement('img');
-            img.setAttribute('src', thumbnailUrl);
-            img.setAttribute('alt', 'Video Thumbnail');
-            img.classList.add('video-thumbnail');
+/// Generate the video List and convert it to a container with the thumbnail
+async function replaceVideoWithThumbnail2(htmlContent) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
 
-            //Replace the <video> tag with the <img> tag
-            video.parentNode.replaceChild(img, video);
-        });
+    const videos = tempDiv.querySelectorAll('video');
+
+    for (let video of videos) {
+        const videoSrc = video.getAttribute('src') || video.querySelector('source').getAttribute('src');
+        if (videosrc) {
+            try {
+                const thumbnail = await generateThumbnail(videoSrc);
+
+                const alt = 'adf';
+
+                let doc = `
+                <div style='position:relative;'>
+                <img src=${thumbnail} style='width:100%;' alt = ${alt} />
+                <span style = 'position:absolute; color:white; left:50%; bottom:50%; transform: translateX(-50%)'>
+                play icon
+                </span>
+                </div>
+                `;
+
+                const wrapper = document.createElement('div');
+
+                wrapper.innerHTML = doc;
+
+                document.body.appendChild(wrapper); //replace with appropriate code
+
+            } catch (error) { }
+        }
     }
-}); 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const thumbnailUrl = await generateThumbnail(videoSrc);
+const range = quilleditor.getSelection(true);
+quilleditor.insertEmbed(range.index, 'videoThumbnail', {
+    src: src,
+    videoUrl: videoSrc,
+    alt: alt
+});

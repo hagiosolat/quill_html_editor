@@ -708,7 +708,7 @@ const String htmlContent = '''
       </tr>
     </table>
     <h2>Image Example</h2>
-    <p><img src="https://hips.hearstapps.com/hmg-prod/images/bright-forget-me-nots-royalty-free-image-1677788394.jpg" alt="Flowers image"></p>
+    <p><div><img src="https://hips.hearstapps.com/hmg-prod/images/bright-forget-me-nots-royalty-free-image-1677788394.jpg" alt="Flowers image"></div></p>
     <h2>IFrame Example</h2>
     <p><iframe width="520" height="300" src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe></p>
     </ul>
