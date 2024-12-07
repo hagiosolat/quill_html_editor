@@ -57,9 +57,10 @@ class QuillHtmlEditor extends StatefulWidget {
     ),
     this.navigationDelegate,
     this.onVerticalScrollChange,
+    this.webVideoTracking,
     this.lastScrollPosition = 0,
-    this.youtubeLastPosition = 0,
-    this.videoLastPosition = 0,
+    this.videoLink,
+    this.videosDuration,
   }) : super(key: controller._editorKey);
 
   /// [text] to set initial text to the editor, please use text
@@ -164,14 +165,17 @@ class QuillHtmlEditor extends StatefulWidget {
   /// [onVerticalScrollChange] to get the value of the scrolling vertically.
   final Function(ScrollPosition)? onVerticalScrollChange;
 
-  /// [videoLastPosition] this is the value of the last position of the video
-  final num videoLastPosition;
-
   /// [lastScrollPosition] this is the value of the last position of the web page
-  final num lastScrollPosition;
+  final num? lastScrollPosition;
 
-  /// [youtubeLastPosition] this is the value of the youtubeLastPosition before exiting
-  final num youtubeLastPosition;
+  /// [videoLink] this is a callback to get the video Link generated from the Javascript sid
+  final Function(String)? videoLink;
+
+  /// [webVideoTracking] to get the values of the video progress
+  final Function(VideoProgressTracking)? webVideoTracking;
+
+  /// [videosDuration] to get the duration of the saved videos
+  final Map<String, dynamic>? videosDuration;
 
   @override
   QuillHtmlEditorState createState() => QuillHtmlEditorState();
@@ -263,8 +267,10 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                 widget.controller.enableEditor(isEnabled);
                 if (widget.text != null) {
                   _setHtmlTextToEditor(htmlText: widget.text!);
-                  _webviewController.callJsMethod(
-                      'setScrollPosition', [widget.lastScrollPosition.toInt()]);
+
+                  _webviewController.callJsMethod('setScrollPosition',
+                      [widget.lastScrollPosition?.toInt()]);
+                  _setVideoPosition(videos: widget.videosDuration ?? {});
                 }
               });
             }
@@ -291,7 +297,10 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
               }
               widget.controller._editorLoadedController?.add('');
               _webviewController.callJsMethod(
-                  'setScrollPosition', [widget.lastScrollPosition.toInt()]);
+                  'setScrollPosition', [widget.lastScrollPosition?.toInt()]);
+              if (kIsWeb) {
+                _setVideoPosition(videos: widget.videosDuration ?? {});
+              }
             });
           },
           dartCallBacks: {
@@ -443,7 +452,8 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                 callBack: (timing) {
                   try {
                     if (timing != null) {
-                      print('$timing%');
+                      widget.webVideoTracking!(
+                          VideoProgressTracking.fromJson(jsonDecode(timing)));
                     }
                   } catch (e) {
                     debugPrint(e.toString());
@@ -454,7 +464,12 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                 name: 'VideoStateChange',
                 callBack: (msg) {
                   try {
-                    print(msg.toString());
+                    if (msg != null) {
+                      if (widget.videoLink != null) {
+                        //  print('Testing the video link $msg');
+                        //  widget.videoLink!(msg.toString());
+                      }
+                    }
                   } catch (e) {
                     debugPrint(e.toString());
                   }
@@ -477,8 +492,9 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                 callBack: (message) {
                   try {
                     if (message != null) {
-                      print(
-                          '^^^^^^^^^^^^^^^^^@@@@@@@@@@@@@@@@@@@ ${message.toString()}');
+                      //  if (widget.videoLink != null) {
+                      widget.videoLink!(message.toString());
+                      // }
                     }
                   } catch (e) {
                     print(e.toString());
@@ -635,10 +651,13 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
 
   /// set the savedScrollPosition to load the pre-existing web Position
   Future _setScrollPosition({required double scrollPosition}) async {
-    print(
-        '##################scrollPosition being sent or something $scrollPosition');
     return await _webviewController
         .callJsMethod("setScrollPosition", [scrollPosition]);
+  }
+
+  Future _setVideoPosition({required Map<String, dynamic> videos}) async {
+    return await _webviewController
+        .callJsMethod("setVideoPosition", [jsonEncode(videos)]);
   }
 
   ///get page
@@ -834,6 +853,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                 var positionMap = {};
                 positionMap['scrollTop'] = scrollTop;
                 positionMap['currentScrollPosition'] = currentScrollPosition;
+                positionMap['maxScroll'] = maxScrollExtent;
 
                   if($kIsWeb){
                    GetScrollPosition(JSON.stringify(positionMap))
@@ -1007,7 +1027,6 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                       tempText = text;
                      if($kIsWeb) {
                       OnTextChanged(text);
-                  //    getCustomVideoDurations();
                     } else {
                       OnTextChanged.postMessage(text);
                     }
@@ -1037,6 +1056,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
             /// quill custom font import
             var FontStyle = Quill.import('attributors/class/font');
             Quill.register(FontStyle, true);
+
             
             const Inline = Quill.import('blots/inline');
             class RequirementBlot extends Inline {}
@@ -1071,113 +1091,72 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                       }
                   }
               };
-                            //Add required CSS
 
-              const styles = `
-                 .video-thumbnail-container {
-                  position: relative;
-                  display: inline-block;
-                  margin: 10px 0;
+          //  const ImageEmbed = Quill.import('blots/block/embed');
+
+            const ImageEmbed = Quill.import('formats/image');
+               
+             class ImageBlot extends ImageEmbed {
+             static create(value) {
+              let node = super.create(value);       
+              PositionAttributor.add(node, 'relative');
+              
+              let img = document.createElement('img');
+                 img.setAttribute('src',value);
+
+                  if(value.includes('data:image') || value.includes('youtube')){
+                  console.log(`This is the url: \${value}`);
+                    let container = document.createElement('div');
+                   container.classList.add('button-wrapper');
+
+                   let  url = node.getAttribute('alt');
+
+                 let playButton = document.createElement('button');                
+                 playButton.classList.add('playButton');
+                 ColorAttributor.add(playButton,'red');
+                 PositionAttributor.add(playButton,'absolute');
+                 playButton.textContent = 'Play Now';
+                 TopAttributor.add(playButton,'150px');
+                 HeightAttributor.add(playButton, '50px');
+                 BackgroundColorAttributor.add(playButton,'blue')
+                 WidthAttributor.add(playButton, '50px');
+                 RightAttributor.add(playButton, '200px');
+                 LeftAttributor.add(playButton, '100px') 
+
+                playButton.addEventListener('click',()=>{
+                let link = node.getAttribute('alt');
+               
+                 if($kIsWeb){
+                  //  GetVideoUrl(link);
+                  } else {
+                    GetVideoUrl.postMessage(link);
                   }
+                // alert(`\${link}`);
+              });
+               node.appendChild(playButton);    
+                  }  
+              node.appendChild(img);          
+              return node;
+             }
+             static value(node){
+             let img2 = node.querySelector('img')
+             return {
+             alt: node.getAttribute('alt'),
+             src:node.getAttribute('src'),
+             };
+               }
+          }
+          ImageBlot.blotName = 'image';
+          ImageBlot.tagName = 'div';
+          Quill.register('formats/image', ImageBlot)
+         // Quill.register(ImageBlot);
 
-                  .video-thumbnail-container img {
-                     max-width: 100%;
-                     height: auto;
-                     display: block;
-                    }
-
-                    .play-button {
-                      position: absolute;
-                      top: 50%;
-                      left: 50%;
-                      transform: translate(-50%, -50%);
-                      width: 60px;
-                      height: 60px;
-                      background-color: rgba(0, 0, 0, 0.7);
-                      border-radius: 50%;
-                      cursor: pointer;
-                      transition: background-color 0.3s;
-                    
-                    }
-
-                    .play-button::after {
-                      content: '';
-                      position: absolute;
-                      top: 50%;
-                      left: 54%;
-                      transform: translate(-50%, -50%);
-                      width: 0;
-                      height: 0;
-                      border-top: 15px solid transparent;
-                      border-bottom: 15px solid transparent;
-                      border-left: 22px solid white;
-                    }
-
-                    .play-button:hover {
-                     background-color: rgba(0, 0, 0, 0.9);                    
-                    }`;
-                  
-                 const styleSheet = document.createElement('style');
-                 styleSheet.textContent = styles;
-                 document.head.appendChild(styleSheet);
-
-            //  const VideoEmbed = Quill.import('blots/block/embed');
-
-            /*  class VideoThumbnail extends VideoEmbed {
-              
-                static create(value) {
-                 const node = super.create();
-                 node.classList.add('video-thumbnail-container');
-
-
-                 //Create the image element
-                 const img = document.createElement('img');
-                 img.setAttribute('src', value.src);
-                 img.setAttribute('alt', value.alt || 'video thumbnail');
-
-
-                //Create the play button overlay
-                img.setAttribute('src', value.src);
-                img.setAttribute('alt', value.alt || 'video thumbnail');
-
-
-                //Create the play button overlay
-                const playButton = document.createElement('div');
-                playButton.classList.add('play-button');
-
-                node.appendChild(img);
-                node.appendChild(playButton);
-
-                if(value.videoUrl){
-                 node.setAttribute('data-video-url', value.videoUrl);
-                
-                }
-                return node;
-                }
-
-                static value(node){
-                  return {
-                   src: node.querySelector('img').getAttribute('src'),
-                   videoUrl: node.getAttribute('data-video-url'),
-                   alt: node.querySelector('img').getAttribute('alt')
-                  
-                  };
-                
-                }
-              
-              }
-
-              VideoThumbnail.blotName = 'video';
-              VideoThumbnail.tagName = 'video';
-
-
-              Quill.register(VideoThumbnail);*/
 
 
                   
-            // let BlockEmbed = Quill.import('blots/block/embed');
+             let BlockEmbed = Quill.import('blots/block/embed');
 
-           /*   class IframeBlot extends BlockEmbed {
+              class IframeBlot extends BlockEmbed {
                 static create(value) {
                  let node = super.create(value);
                  node.setAttribute('id', 'videoframe');
@@ -1201,39 +1180,51 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                 };
                 }
 
-                   static addYoutubeTracking(node) {
-             const player = new YT.Player(node.id, {
-              events: {
-                'onReady': this.onPlayerReady,
-                'onStateChange': this.onPlayerStateChange
-              }
-             });
-            }
+               static addYoutubeTracking(node) {
+              const player = new YT.Player(node.id, {
+               events: {
+                'onReady':(event) => this.onPlayerReady(event, node),
+                'onStateChange':(event) => this.onPlayerStateChange(event, node)
+                }
+               });
+             }
 
-                  static onPlayerReady(event) {
-                  const duration = event.target.getDuration();
-                  VideoStateChange(`The youtube video duration \${duration}`);
-            console.log('YouTube Player is ready.');
-            }
+                 static onPlayerReady(event,node) { 
+                   const key = node.getAttribute('src');
+                   console.log(key);
+                   if(videoMap.hasOwnProperty(key)){
+                    console.log('This is something that happen');
+                    const savedPosition = videoMap[key] * 0.001;
+                    event.target.seekTo(parseFloat(savedPosition), true); //Resume playback
+                  }                
+                   // console.log('Testing the Youtube videos when ready for playing or resumption');
+                  }
 
-                   static onPlayerStateChange(event) {
+             static onPlayerStateChange(event, node) {
              if(event.data == YT.PlayerState.PLAYING) {
-              IframeBlot.trackProgress(event.target);
+              IframeBlot.trackProgress(event.target, node);
              } else if (event.data == YT.PlayerState.ENDED){
                 console.log('Video has ended.');
              }
             }
              
-             static trackProgress(player) {
+             static trackProgress(player,node) {
                 const duration = player.getDuration();
+                const videoUrl = node.getAttribute('src');
                 const trackInterval = setInterval(() => {
                 if(player.getPlayerState() === YT.PlayerState.PLAYING) {
                 const currentTime = player.getCurrentTime();
+                var postMap = {};
+                postMap['totalDuration'] = duration * 1000;
+                postMap['currentPosition'] = currentTime * 1000;
+                postMap['videoUrl'] = videoUrl;
                 const progress = (currentTime/duration) * 100;
                   if($kIsWeb){
-                    GetVideoTracking(progress.toFixed(2));
+                   GetVideoTracking(JSON.stringify(postMap));
+                 //   GetVideoTracking(progress.toFixed(2));
                   } else {
-                    GetVideoTracking.postMessage(progress.toFixed(2));
+                   GetVideoTracking.postMessage(JSON.stringify(postMap))
+                   // GetVideoTracking.postMessage(progress.toFixed(2));
                   }
                 } else {
                  clearInterval(trackInterval);
@@ -1243,57 +1234,63 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
               }
               IframeBlot.blotName = 'regex';
               IframeBlot.tagName = 'iframe';
-              Quill.register(IframeBlot); */
+             
 
-          /*    class VideoBlot extends BlockEmbed{
+              Quill.register(IframeBlot); 
+
+              class VideoBlot extends BlockEmbed{
                static create(value) {
                  let node = super.create(value);
                  node.setAttribute('id', 'videoElement');
                  node.setAttribute('width', value.width || 520);
                  node.setAttribute('height', value.height || 300);
                  node.setAttribute('controls', true);
+                 PositionAttributor.add(node, 'relative');
                  let source = document.createElement('source');
-                 source.setAttribute('src', `\${value.url}#t=0.1`);
+                 source.setAttribute('src', `\${value.url}#t=0.3`);
                  source.setAttribute('type', 'video/mp4');
+                
+                node.addEventListener('loadedmetadata', ()=> {
+                  let key = value.url;
+                  if(videoMap.hasOwnProperty(key)){
+                   // console.log('This is something that happen');
+                   // console.log(videoMap[key]);
+                    node.currentTime = videoMap[key] * 0.001;
+                  }
+
+                });
 
                 node.addEventListener('timeupdate', ()=> {
-                const currentTime = node.currentTime;
-                const duration = node.duration;
+               
+                const currentTime = node.currentTime * 1000;
+                const duration = node.duration * 1000;
                 const progress = (currentTime / duration) * 100;
+                var postMap = {};
+                postMap['totalDuration'] = duration;
+                postMap['currentPosition'] = currentTime;
+                postMap['videoUrl'] = value.url;
                 if($kIsWeb) {
-                GetVideoTracking(progress.toFixed(2));
+                  GetVideoTracking(JSON.stringify(postMap))
                }else {
-               GetVideoTracking.postMessage(progress.toFixed(2));
+                  GetVideoTracking.postMessage(JSON.stringify(postMap)) 
               }
              });
         
         node.addEventListener('play', ()=> {
-         if($kIsWeb){
-         console.log('testing console log output on flutter');
-          VideoStateChange(value.url);
-         } else {
-          VideoStateChange.postMessage(value.url);
-         }
-        });
+                });
 
         node.addEventListener('pause', () => {
          if($kIsWeb){
-          VideoStateChange('Video is paused');
          } else {
-          VideoStateChange.postMessage('Video is paused');
          }
          });
 
           node.addEventListener('ended', () => {
          if($kIsWeb){
-          VideoStateChange('Video has ended');
          } else {
-          VideoStateChange.postMessage('Video has ended');
          }
          });
-
-                 node.appendChild(source);
-                
+                node.appendChild(source);
                 return node;
                }
 
@@ -1309,7 +1306,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
               }
               VideoBlot.blotName = 'video';
               VideoBlot.tagName = 'video';
-              Quill.register(VideoBlot);  */
+              Quill.register(VideoBlot);  
 
               
               let Block = Quill.import('blots/block');
@@ -1318,7 +1315,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                static tagName = 'div';
                static blotName = 'division';
               }
-              Quill.register(Division);
+              Quill.register(Division); 
 
 
               let Embed = Quill.import('blots/embed');
@@ -1364,8 +1361,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                     EditorLoaded.postMessage(true);
                 }
                   editorLoaded = true;
-                }
-             
+                }             
             });
             
             quilleditor.on('selection-change', function(range, oldRange, source)  {
@@ -1375,10 +1371,8 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
               OnSelectionChanged(getSelectionRange());
               }else{
               OnSelectionChanged.postMessage(getSelectionRange());
-              }     
-              
+              }                
             });
-                  
             function onRangeChanged() { 
               try {
                 var range = quilleditor.getSelection(true);
@@ -1440,7 +1434,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                 UpdateFormat.postMessage(JSON.stringify(formatMap));
               }
             }
-     
+    
            
             function getHtmlText() {
               return quilleditor.root.innerHTML;
@@ -1506,24 +1500,32 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                 console.log('setSelection', e);
               }
               return '';
-            }
-            
-           async function setHtmlText(htmlString) {
-            try{
-               const modifiedHtml = await replaceVideoWithThumbnail(htmlString);
-                console.log('*****&&&****&&&*****&&&*****&&&&&******&&&******&&&&&*****&&&&****&&&&****');
-                console.log(`\${modifiedHtml}`);
-                console.log('*****&&&****&&&*****&&&*****&&&&&******&&&******&&&&&*****&&&&****&&&&****');
-                 quilleditor.enable(false);
-               quilleditor.clipboard.dangerouslyPasteHTML(modifiedHtml);  
-               //quilleditor.clipboard.dangerouslyPasteHTML(htmlString);   
-            }catch(e){
-               console.log('setHtmlText', e);
-            }
-             setTimeout(() =>   quilleditor.enable($isEnabled), 10);  
-              return '';
-            }
-            
+            }            
+
+       async function setHtmlText(htmlString) {
+    console.log('*****&&&****&&&*****&&&*****&&&&&******&&&******&&&&&*****&&&&****&&&&****');
+    try {
+           if($kIsWeb) {
+              quilleditor.enable(false);
+            quilleditor.clipboard.dangerouslyPasteHTML(htmlString); 
+           } else {
+
+          const modifiedHtml = await replaceVideoWithThumbnail(htmlString);
+
+           //console.log(`\${modifiedHtml}`);
+           console.log('*****&&&****&&&*****&&&*****&&&&&******&&&******&&&&&*****&&&&****&&&&****');
+          quilleditor.enable(false);
+          quilleditor.clipboard.dangerouslyPasteHTML(modifiedHtml); 
+           }
+          
+          
+    } catch (e) {
+        console.log('setHtmlText', e);
+    }
+    setTimeout(() => quilleditor.enable($isEnabled), 10);
+    return '';
+} 
+
           
             function setDeltaContent(deltaMap) {   
               try{
@@ -1612,99 +1614,119 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
               return '';
             }
 
+             const Parchment = Quill.import('parchment');
+
+            //const  = new Parchment.StyleAttributor('playButtonSize','font-size', {scope: Parchment.Scope.INLINE});
+            
+           
+
+             const PositionAttributor = new Parchment.StyleAttributor('position','position');
+             const DisplayAttributor = new Parchment.StyleAttributor('display','display');
+            // const TransformAttributor = Quill.import('attributors/style/transform');
+            // const FontSizeAttributor = Quill.import('attributors/style/font-size');
+             const ColorAttributor = new Parchment.StyleAttributor('color','color');
+             const BackgroundColorAttributor = new Parchment.StyleAttributor('background-color','background-color');
+            // const PaddingAttributor = Quill.import('attributors/style/padding');
+            // const BorderRadiusAttributor = Quill.import('attributors/style/border-radius');
+             const CursorAttributor = new Parchment.StyleAttributor('cursor','cursor');
+             const TopAttributor = new Parchment.StyleAttributor('top','top');
+             const HeightAttributor = new Parchment.StyleAttributor('height','height');
+             const WidthAttributor = new Parchment.StyleAttributor('width','width');
+             const RightAttributor = new Parchment.StyleAttributor('right','right');
+             const LeftAttributor = new Parchment.StyleAttributor('left','left');
+
+
+             Quill.register(PositionAttributor, true);
+             Quill.register(DisplayAttributor, true);
+            // Quill.register(TransformAttributor, true);
+            // Quill.register(FontSizeAttributor, true);
+             Quill.register(ColorAttributor, true);
+             Quill.register(BackgroundColorAttributor, true);
+            // Quill.register(PaddingAttributor, true);
+            // Quill.register(BorderRadiusAttributor, true);
+             Quill.register( CursorAttributor, true);
+            
+
             ///Generate the video List and convert it to a container with the thumbnail
               async function replaceVideoWithThumbnail(htmlContent) {
                //Create a temporary element to hold the HTML content
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = htmlContent;
 
-                const videos = tempDiv.querySelectorAll('video');
-                  
-               for(let video of videos){
-                const videoSrc = video.getAttribute('src') || video.querySelector('source').getAttribute('src');
-                if(videoSrc){
+               const videos = tempDiv.querySelectorAll('video');
+               
+               const iframes = tempDiv.querySelectorAll('iframe');
+                          
+                     for (let iframe of iframes) {
+                 const videoSrc = iframe.getAttribute('src');
+
+             if (videoSrc) {
+              try {
+                  console.log(`\${videoSrc}`);
+                const thumbnailUrl = await getYouTubeThumbnail(videoSrc);
+                console.log(`This is the generated thumbnail \${thumbnailUrl}`);
+               const thumbnailWithButton = insertThumbnailWithPlayButton(thumbnailUrl, videoSrc);
+
+                iframe.parentNode.replaceChild(thumbnailWithButton, iframe);
+
+            } catch (e) {
+                console.log('Error generating videoThumbnail:', e);
+             }
+           }
+       }
+                for(let video of videos){
+                  const width = video.getAttribute('width');
+                  const height = video.getAttribute('height');
+                 const videoSrc = video.getAttribute('src') || video.querySelector('source').getAttribute('src');
+                 if(videoSrc){
                     try {
-                          //Create an <img> tag with the thumbnail URL
+            //               //Create an <img> tag with the thumbnail URL
+                                console.log(`This is the width of the video \${width}`);
+                                console.log(`This is the height of the video \${height}`);
 
-                                    const thumbnailUrl = await generateThumbnail(videoSrc);
+                                const thumbnailUrl = await generateThumbnail(videoSrc);
 
-                                  const img = document.createElement('img');
-                                  img.setAttribute('src', thumbnailUrl);
-                                  img.setAttribute('alt', 'Video Thumbnail');
-                                  img.classList.add('video-thumbnail-container');
-
-                                img.style.width = '40px';
-                                img.style.height = 'auto';
-                                img.style.display = 'block';
-
-                                //Create a div to wrap the img and the play button
-                                  const wrapperDiv = document.createElement('div');
-                                  wrapperDiv.classList.add('thumbnail-wrapper');
-
-                                  // Inline styles for the wrapper div
-                                    wrapperDiv.style.position = 'relative';
-                                    // wrapperDiv.style.display = 'inline-block';
-                                    wrapperDiv.style.backgroundColor = 'blue',
-                                    wrapperDiv.style.width = '50%'
+                              const thumbnailWithButton = insertThumbnailWithPlayButton(thumbnailUrl, videoSrc, width, height);
 
 
-                                    const playButton = document.createElement('div');
-                                    playButton.classList.add('play-button');
-                                    playButton.innerHTML = '&#9658';
-                                    playButton.style.position = 'fixed';
-                                    playButton.style.top = '50px';
-                                    playButton.style.left = '50%';
-                                    playButton.style.transform = 'translate(-50%, -50%)';
-                                    playButton.style.fontSize = '150px';
-                                    playButton.style.color = 'red';
-                                      playButton.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-                                      playButton.style.borderRadius = '50%';
-                                      playButton.style.padding = '20px';
-                                      playButton.style.cursor = 'pointer';
-
-
-
-                                    //Append the playButtonDiv to the wrapperDiv after the img
-                                    wrapperDiv.appendChild(img);
-                                    wrapperDiv.appendChild(playButton);
-
-                                    //Create a <p> tag to be the parent of the img tag
-                                  //const paragraph = document.createElement('p');
-
-                                  //Append the img tag as a child of the paragraph
-                                  //paragraph.appendChild(wrapperDiv);
-
-                                  //Replace the <video> tag with the <img> tag
-
-
-                                  video.parentNode.replaceChild(wrapperDiv, video);
+                                video.parentNode.replaceChild(thumbnailWithButton, video);
 
                             
-                            } catch(error) {
-                     console.log('Error generating thumbnail:', error);
-                    }
-                }
-             } 
-                return tempDiv.innerHTML; //Return the modified HTML             
-               }
-              
-              function getVideoThumbnail(videoUrl) {
-              console.log('get the video thumbnail function working');
-              if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
-               return Promise.resolve(getYouTubeThumbnail(videoUrl));
-              } else {
-                  // Handle other video platforms or self-hosted videos
+                             } catch(error) {
+                      console.log('Error generating thumbnail:', error);
+                     }
+                 }
+              }    
+           return tempDiv.innerHTML; //Return the modified HTML             
+      }
 
-                  return generateCustomVideoThumbnail(videoUrl);
-                  }
+              function insertThumbnailWithPlayButton(thumbnailUrl, videoSrc, width, height) {
+                      //Create an <img> tag with the thumbnail URL
+                    const img = document.createElement('img');
+                     img.setAttribute('src', thumbnailUrl);
+                     img.setAttribute('alt', videoSrc);
+                     img.setAttribute('width', width);
+                     img.setAttribute('height', height);
+                   return img;                
               }
+   
+      function getYouTubeThumbnail(url) {
 
-              function getYouTubeThumbnail(videoUrl){
-              console.log('tried converting youTube video to thumbnail');
-               const videoId = videoUrl.split('v=')[1] || videoUrl.split('/')[3];
-               return `https://img.youtube.com/vi/\${videoId}/hqdefault.jpg`;
-              }
-          
+    // Regular expression to extract the video ID from a YouTube URL
+    const regex = /(?:https?:\\/\\/)?(?:www\\.)?(?:youtube\\.com\\/(?:[^\\/\\n\\s]+\\/\\S+\\/|(?:v|embed|e)\\/|\\S*?[?&]v=)|youtu\\.be\\/)([a-zA-Z0-9_-]{11})/;
+
+    const match = url.match(regex);
+    if (match && match[1]) {
+        const videoId = match[1];
+        // Construct different thumbnail URLs
+        const thumbnails =
+            `https://img.youtube.com/vi/\${videoId}/hqdefault.jpg`;
+        return thumbnails;
+    } else {
+        console.error('Invalid YouTube URL');
+        return null;
+    }
+}
 
               ///This is the container to set the thumbnail as the background of the container
               ///*****************************************************************************
@@ -1733,24 +1755,6 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                 video.currentTime = 2;
                 });
              }
-
-            ///This is the function to get the duration of the video.  
-            ///***************************************************************** 
-            function getCustomVideoDurations() {
-
-            const videos = document.querySelectorAll('video');
-
-            videos.forEach((video) => {
-             video.addEventListener('loadedmetadata', function(){
-                    //const duration = video.duration
-                      if($kIsWeb){
-          VideoStateChange(`################## testing the videoLoadedData for duration \${video.duration}`);
-         } else {
-          VideoStateChange.postMessage('Video has ended');
-         } });
-            });
-          }
-         
           
             ///This is the function to set the scrollPosition of the last position.
             ///********************************************************************
@@ -1760,7 +1764,25 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
              }
             }
             
+            let videoMap;
+            
+            function setVideoPosition(videoPosition){
+            console.log('The javascript side of the code is this');
+             console.log(videoPosition);
+             console.log(typeof videoPosition);
+             try{
+             
+               videoMap = JSON.parse(videoPosition);
+              console.log('Testing for the available videos in the javascript side');
+              console.log(JSON.stringify(videoMap));
+              console.log(videoMap);
+             } catch (error) {
+               console.error('Error parsing JSON:', error);
+             }
+            }
+            
             function enableEditor(isEnabled) {
+             console.log(`Is the editor enable printing \${isEnabled}`);
               quilleditor.enable(isEnabled);
               return '';
             }
@@ -2083,10 +2105,15 @@ class QuillEditorController {
 
   /// [setScrollPosition] method to setScrollPosition
   void setScrollPosition(double scrollPosition) async {
-    print(
-        '###############################settinng the scrollPosition $scrollPosition');
+    // print(
+    //     '###############################settinng the scrollPosition $scrollPosition');
     await _editorKey?.currentState
         ?._setScrollPosition(scrollPosition: scrollPosition);
+  }
+
+  /// [setVideoPosition] method to set the Last saved Video Position
+  void setVideoPosition(Map<String, dynamic> videos) async {
+    await _editorKey?.currentState?._setVideoPosition(videos: videos);
   }
 }
 
@@ -2116,36 +2143,33 @@ class ScrollPosition {
   /// [currentPosition] the current Position in the web scrolling
   dynamic currentPosition;
 
+  /// [maxScroll] the maxScroll Length
+  dynamic maxScroll;
+
   ///[ScrollPosition.fromJson] extension method to get the scrollTop and the currentPosition model from json
   ScrollPosition.fromJson(Map<String, dynamic> json) {
     scrollTop = json['scrollTop'];
     currentPosition = json['currentScrollPosition'];
+    maxScroll = json['maxScroll'];
   }
 }
 
-///[QuillProgressController] is a model class to control the progresses of the Editor
+///[VideoProgressTracking] a model class to get the current duration and total duration of a particular video
+class VideoProgressTracking {
+  /// [totalDuration] the video duration
+  dynamic totalDuration;
 
-class QuillProgressController {
-  /// [youtubeLastPosition] the last youtube Position
-  dynamic youtubeLastPosition;
+  /// [currentPosition] the video current Position
+  dynamic currentPosition;
 
-  /// [videoLastPosition] the last video Position
-  dynamic videoLastPosition;
+  /// [videoUrl] the video link value
+  dynamic videoUrl;
 
-  /// [lastScrollPosition] the last Scroll Position of the Page
-  dynamic lastScrollPosition;
-
-  ///[QuillProgressController] constructor
-  QuillProgressController(
-      {this.youtubeLastPosition,
-      this.videoLastPosition,
-      this.lastScrollPosition});
-
-  ///[QuillProgressController.fromJson] extension method to get the class attributes last position
-  QuillProgressController.fromJson(Map<String, dynamic> json) {
-    youtubeLastPosition = json['youtubeLastPosition'];
-    videoLastPosition = json['videoLastPosition'];
-    lastScrollPosition = json['lastScrollPosition'];
+  ///[VideoProgressTracking.fromJson] extension method to get the duration and the currentPosition model from Json
+  VideoProgressTracking.fromJson(Map<String, dynamic> json) {
+    totalDuration = json['totalDuration'];
+    currentPosition = json['currentPosition'];
+    videoUrl = json['videoUrl'];
   }
 }
 

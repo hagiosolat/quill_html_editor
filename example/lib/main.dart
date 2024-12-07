@@ -1,11 +1,10 @@
-// ignore_for_file: implementation_imports
-import 'dart:convert';
+// ignore_for_file: implementation_imports, use_build_context_synchronously
+import 'package:example/mobile_youtube_video.dart';
+import 'package:example/progress_bar.dart';
+import 'package:example/show_web_video.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:quill_html_editor/quill_html_editor.dart';
-import 'package:quill_html_editor/src/widgets/webviewx/src/webviewx_plus.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,19 +52,32 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   int selectedTextlength = 0;
   int selectedTextPosition = 0;
-  Duration positioning = Duration.zero;
   // final GlobalKey _textKey = GlobalKey();
   final List<Comment> _comments = [];
   final TextEditingController commentController = TextEditingController();
   final QuillEditorController controller = QuillEditorController();
-  late YoutubePlayerController _youtubecontroller;
+  //TODO: Testing use case for the total duration of the videos
+  final int totalDuration = 60070 + 653803 + 213000;
   ScrollController scrollController = ScrollController();
+  // variable to hold videoProgress
+  double _videoProgress = 0.0;
+  //Variable to hold the total Progress.[videos and article Progress]
+  double totalInteractionProgress = 0.0;
+  //variable to hold the scrolling progress
   num _progress = 0.0;
-  num scrollPosition = 0.0;
+  //variable to hold current scroll
+  num scrollength = 0.0;
+  //variable to the video and their last position to be saved
+  //to the backend database
+  Map<String, dynamic> controllerMap = {};
+  //variable to hold the progress of the videos being played
+  Map<String, dynamic> videoProgressMap = {};
+  //variable to hold the progress of both the videos and
+  //the article progress
+  Map<String, dynamic> totalProgressMap = {};
 
   void _addComment(String text) {
     final comment = Comment(text: text);
-
     setState(() {
       _comments.add(comment);
       commentController.clear();
@@ -73,74 +85,96 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     });
   }
 
+  void _getTotalProgress() {
+    /// Get the scroll Length
+    /// Get the total Duration
+    setState(() {
+      totalInteractionProgress = (totalProgressMap.values
+              .fold(0.0, (sum, progressTtotal) => sum + progressTtotal)) /
+          (totalDuration + scrollength.toDouble());
+    });
+  }
+
+  void _updateTotalProgress() {
+    if (videoProgressMap.isNotEmpty) {
+      _videoProgress = (videoProgressMap.values
+              .fold(0.0, (sum, progress) => sum + progress) /
+          totalDuration);
+    } else {
+      _videoProgress = 0.0;
+    }
+  }
+
+  /// Youtube mobile version dialog box
   showdialog(BuildContext context, String youtubeLink) {
-    print(
-        'trying to get the converted link of the video link ${YoutubePlayer.convertUrlToId(youtubeLink)}');
-    _youtubecontroller = YoutubePlayerController(
-        initialVideoId: YoutubePlayer.convertUrlToId(
-                'https://www.youtube.com/embed/dQw4w9WgXcQ') ??
-            '',
-        flags: const YoutubePlayerFlags(
-          mute: false,
-          autoPlay: true,
-          disableDragSeek: false,
-          loop: false,
-          isLive: false,
-          forceHD: false,
-          enableCaption: true,
-        ));
-    //..addListener(listener);
     showDialog(
       barrierDismissible: false,
       context: context,
       builder: (context) {
-        return Dialog(
-            child: YoutubePlayerBuilder(
-          onExitFullScreen: () {
-            SystemChrome.setPreferredOrientations(DeviceOrientation.values);
-          },
-          player: YoutubePlayer(
-            controller: _youtubecontroller,
-            showVideoProgressIndicator: true,
-            progressIndicatorColor: Colors.blueAccent,
-            topActions: const [],
-            onReady: () {
-              // _youtubecontroller.updateValue(YoutubePlayerValue(position: positioning));
-              _youtubecontroller.seekTo(positioning, allowSeekAhead: true);
+        return MobileYoutubeVideoWidget(
+            //I want to pass duration to start back where the video stops
+            positioning: controllerMap.containsKey(youtubeLink)
+                ? controllerMap[youtubeLink]
+                : Duration.zero,
+            videoUrl: youtubeLink,
+            durationRation: (duration) {
+              //This will save the percentage of the video
             },
-            onEnded: (data) {},
-          ),
-          builder: (context, player) {
-            // _youtubecontroller.addListener(positionListener);
-            return Stack(
-              children: [
-                Container(
-                  width: MediaQuery.of(context).size.width,
-                  height: MediaQuery.of(context).size.height / 3.5,
-                  color: Colors.transparent,
-                  child: player,
-                ),
-                Positioned(
-                  child: IconButton(
-                      onPressed: () {
-                        positioning = _youtubecontroller.value.position;
-
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(
-                        Icons.cancel,
-                        size: 35,
-                        color: Colors.white,
-                      )),
-                )
-              ],
-            );
-          },
-        ));
+            videoDuration: (totalDuration) {
+              //when the video has been paused on quit.
+              // send the position to this point and then save it
+              // to the Map Controller to retrieve it back when resumed.
+              controllerMap[youtubeLink] = totalDuration;
+            },
+            currentPosition: (currentPosition) {
+              // print('$currentPosition');
+              setState(() {
+                videoProgressMap[youtubeLink] = currentPosition.inMilliseconds;
+                totalProgressMap[youtubeLink] = currentPosition.inMilliseconds;
+                _updateTotalProgress();
+                _getTotalProgress();
+              });
+            });
       },
     );
   }
 
+  //Normal video Alert Dialog  Mobile Version
+  shownormalVideoDialog(BuildContext context, String videolink) {
+    showDialog(
+        barrierDismissible: false,
+        barrierLabel: 'Video Dialog',
+        context: context,
+        builder: (BuildContext context) {
+          return Center(
+            child: Material(
+                type: MaterialType.transparency,
+                child: VideoWidget(
+                  positioning: controllerMap.containsKey(videolink)
+                      ? controllerMap[videolink]
+                      : Duration.zero,
+                  videoUrl: videolink,
+                  videoDuration: (currentTime) {
+                    ///This is to save the videoDuration when the video has been exited
+                    ///from the pop-up
+                    controllerMap[videolink] = currentTime;
+                    print(controllerMap[videolink]);
+                  },
+                  videoRatio: (videoPercentage) {},
+                  currentPosition: (currentTime) {
+                    setState(() {
+                      videoProgressMap[videolink] = currentTime.inMilliseconds;
+                      totalProgressMap[videolink] = currentTime.inMilliseconds;
+                      _updateTotalProgress();
+                      _getTotalProgress();
+                    });
+                  },
+                )),
+          );
+        });
+  }
+
+  ///Modal Bottom Sheet
   showModalSheetScreen(int index, int length) {
     showModalBottomSheet(
         context: context,
@@ -213,10 +247,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         });
   }
 
+  //TODO: When to save all the datas as a Map and also to access them all at inistate
+  // when they are called back at the screen
   @override
   void initState() {
     //controller.setScrollPosition(scrollPosition)
-    WidgetsBinding.instance.addObserver(this);
     controller.onTextChanged((text) {
       debugPrint('listening to $text');
     });
@@ -224,30 +259,19 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       debugPrint('Editor Loaded :)');
     });
     controller.setText(htmlContent);
-    // _youtubecontroller.addListener(positionListener);
+
+    /// From here we can load the saved percentage of
+    /// the previous saved article
+    /// then update it with the current playing videos
     super.initState();
   }
 
   @override
   void dispose() {
-    //  _youtubecontroller.removeListener(positionListener);
-    WidgetsBinding.instance.removeObserver(this);
-    _youtubecontroller.dispose();
     //  scrollController.removeListener(scrollListener);
     scrollController.dispose();
-
-    /// please do not forget to dispose the controller
     controller.dispose();
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached) {
-      positioning = _youtubecontroller.value.position;
-    }
-    super.didChangeAppLifecycleState(state);
   }
 
   @override
@@ -275,17 +299,38 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         backgroundColor: Colors.white,
         resizeToAvoidBottomInset: true,
         body: kIsWeb
+            //WEB VERSION EDITOR OUTLOOK
             ? CustomScrollView(
                 slivers: [
                   SliverToBoxAdapter(
                     child: Column(
                       children: [
                         toolbar(),
-                        LinearProgressIndicator(
-                          value: _progress.toDouble(),
-                          backgroundColor: Colors.lightGreen,
-                          valueColor:
-                              const AlwaysStoppedAnimation<Color>(Colors.blue),
+                        ProgressBars(
+                          label:
+                              'Total Progress ${(totalInteractionProgress * 100).toStringAsFixed(1)}%',
+                          progress: totalInteractionProgress,
+                          color: Colors.blue,
+                        ),
+                        Container(
+                          height: 2,
+                          color: Colors.grey,
+                        ),
+                        ProgressBars(
+                          label:
+                              'Video Progress ${(_videoProgress * 100).toStringAsFixed(1)}%',
+                          progress: _videoProgress,
+                          color: Colors.blueAccent,
+                        ),
+                        Container(
+                          height: 2,
+                          color: Colors.grey,
+                        ),
+                        ProgressBars(
+                          label:
+                              'Article Progress ${(_progress.toDouble() * 100).toStringAsFixed(1)}%',
+                          progress: _progress.toDouble(),
+                          color: Colors.lightBlue,
                         ),
                       ],
                     ),
@@ -320,14 +365,35 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                       )
                 ],
               )
+            //THE MOBILE VERSION EDITOR OUTLOOK
             : Column(
                 children: [
                   toolbar(),
-                  LinearProgressIndicator(
-                    value: _progress.toDouble(),
-                    backgroundColor: Colors.lightGreen,
-                    valueColor:
-                        const AlwaysStoppedAnimation<Color>(Colors.blue),
+                  ProgressBars(
+                    label:
+                        'Total Progress ${(totalInteractionProgress * 100).toStringAsFixed(1)}%',
+                    progress: totalInteractionProgress,
+                    color: Colors.blue,
+                  ),
+                  Container(
+                    height: 2,
+                    color: Colors.grey,
+                  ),
+                  ProgressBars(
+                    label:
+                        'Video Progress ${(_videoProgress * 100).toStringAsFixed(1)}%',
+                    progress: _videoProgress,
+                    color: Colors.blueAccent,
+                  ),
+                  Container(
+                    height: 2,
+                    color: Colors.grey,
+                  ),
+                  ProgressBars(
+                    label:
+                        'Article Progress ${(_progress.toDouble() * 100).toStringAsFixed(1)}%',
+                    progress: _progress.toDouble(),
+                    color: Colors.lightBlue,
                   ),
                   Expanded(flex: 10, child: editor()),
                 ],
@@ -389,103 +455,101 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                       ],
                     ),
                   )
-                : Container(
-                    width: double.maxFinite,
-                    color: _toolbarColor,
-                    padding: const EdgeInsets.all(8),
-                    child: Wrap(
-                      children: [
-                        textButton(
-                            text: 'Set Text',
-                            onPressed: () {
-                              setHtmlText(htmlContent);
-                              //setHtmlText('This text is set by you 🫵');
-                            }),
-                        textButton(
-                            text: 'Get Text',
-                            onPressed: () {
-                              getHtmlText();
-                            }),
-                        textButton(
-                            text: 'Insert Video',
-                            onPressed: () {
-                              ////insert
-                              insertVideoURL(
-                                  'https://www.youtube.com/watch?v=4AoFA19gbLo');
-                              insertVideoURL('https://vimeo.com/440421754');
-                              insertVideoURL(
-                                  'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
-                            }),
-                        textButton(
-                            text: 'Insert Image',
-                            onPressed: () {
-                              controller.embedImage(htmlContent);
-                              // insertNetworkImage(
-                              //     'https://i.imgur.com/0DVAOec.gif');
-                            }),
-                        textButton(
-                            text: 'Insert Index',
-                            onPressed: () {
-                              insertHtmlText(
-                                  "This text is set by the insertText method",
-                                  index: 10);
-                            }),
-                        textButton(
-                            text: 'Undo',
-                            onPressed: () {
-                              controller.undo();
-                            }),
-                        textButton(
-                            text: 'Redo',
-                            onPressed: () {
-                              controller.redo();
-                            }),
-                        textButton(
-                            text: 'Clear History',
-                            onPressed: () async {
-                              controller.clearHistory();
-                            }),
-                        textButton(
-                            text: 'Clear Editor',
-                            onPressed: () {
-                              controller.clear();
-                            }),
-                        textButton(
-                            text: 'Get Delta',
-                            onPressed: () async {
-                              var delta = await controller.getDelta();
-                              debugPrint('delta');
-                              debugPrint(jsonEncode(delta));
-                            }),
-                        textButton(
-                            text: 'Set Delta',
-                            onPressed: () {
-                              final Map<dynamic, dynamic> deltaMap = {
-                                "ops": [
-                                  {
-                                    "insert": {
-                                      "video":
-                                          "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-                                    }
-                                  },
-                                  {
-                                    "insert": {
-                                      "video":
-                                          "https://www.youtube.com/embed/4AoFA19gbLo"
-                                    }
-                                  },
-                                  {"insert": "Hello"},
-                                  {
-                                    "attributes": {"header": 1},
-                                    "insert": "\n"
-                                  },
-                                  {"insert": "You just set the Delta text 😊\n"}
-                                ]
-                              };
-                              controller.setDelta(deltaMap);
-                            }),
-                      ],
-                    ))
+                : const SizedBox.shrink()
+            // : Container(
+            //     width: double.maxFinite,
+            //     color: _toolbarColor,
+            //     padding: const EdgeInsets.all(8),
+            //     child: Wrap(
+            //       children: [
+            //         textButton(
+            //             text: 'Set Text',
+            //             onPressed: () {
+            //               setHtmlText(htmlContent);
+            //               //setHtmlText('This text is set by you 🫵');
+            //             }),
+            //         textButton(
+            //             text: 'Get Text',
+            //             onPressed: () {
+            //               getHtmlText();
+            //             }),
+            //         textButton(
+            //             text: 'Insert Video',
+            //             onPressed: () {
+            //               ////insert
+            //               insertVideoURL(
+            //                   'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4');
+            //             }),
+            //         textButton(
+            //             text: 'Insert Image',
+            //             onPressed: () {
+            //               controller.embedImage(htmlContent);
+            //               // insertNetworkImage(
+            //               //     'https://i.imgur.com/0DVAOec.gif');
+            //             }),
+            //         textButton(
+            //             text: 'Insert Index',
+            //             onPressed: () {
+            //               insertHtmlText(
+            //                   "This text is set by the insertText method",
+            //                   index: 10);
+            //             }),
+            //         textButton(
+            //             text: 'Undo',
+            //             onPressed: () {
+            //               controller.undo();
+            //             }),
+            //         textButton(
+            //             text: 'Redo',
+            //             onPressed: () {
+            //               controller.redo();
+            //             }),
+            //         textButton(
+            //             text: 'Clear History',
+            //             onPressed: () async {
+            //               controller.clearHistory();
+            //             }),
+            //         textButton(
+            //             text: 'Clear Editor',
+            //             onPressed: () {
+            //               controller.clear();
+            //             }),
+            //         textButton(
+            //             text: 'Get Delta',
+            //             onPressed: () async {
+            //               var delta = await controller.getDelta();
+            //               debugPrint('delta');
+            //               debugPrint(jsonEncode(delta));
+            //             }),
+            //         textButton(
+            //             text: 'Set Delta',
+            //             onPressed: () {
+            //               final Map<dynamic, dynamic> deltaMap = {
+            //                 "ops": [
+            //                   {
+            //                     "insert": {
+            //                       "video":
+            //                           "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+            //                     }
+            //                   },
+            //                   {
+            //                     "insert": {
+            //                       "video":
+            //                           "https://www.youtube.com/embed/4AoFA19gbLo"
+            //                     }
+            //                   },
+            //                   {"insert": "Hello"},
+            //                   {
+            //                     "attributes": {"header": 1},
+            //                     "insert": "\n"
+            //                   },
+            //                   {"insert": "You just set the Delta text 😊\n"}
+            //                 ]
+            //               };
+            //               controller.setDelta(deltaMap);
+            //             }),
+            //       ],
+            //     ))
             : const SizedBox.shrink(),
       ),
     );
@@ -512,73 +576,103 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     );
   }
 
+  ///EDITOR WIDGET.
   Widget editor() {
     return QuillHtmlEditor(
-      text: htmlContent,
-      hintText: 'Hint text goes here',
-      controller: controller,
-      isEnabled: true,
-      ensureVisible: false,
-      minHeight: 500,
-      autoFocus: false,
-      textStyle: _editorTextStyle,
-      hintTextStyle: _hintTextStyle,
-      hintTextAlign: TextAlign.start,
-      //padding: const EdgeInsets.only(left: 10, top: 10),
-      hintTextPadding: const EdgeInsets.only(left: 20),
-      backgroundColor: _backgroundColor,
-      inputAction: InputAction.newline,
-      onEditingComplete: (s) => debugPrint('Editing completed $s'),
-      onFocusChanged: (focus) {
-        debugPrint('has focus $focus');
-        setState(() {
-          _hasFocus = focus;
-        });
-      },
-      onTextChanged: (text) => debugPrint('widget text change $text'),
-      onEditorCreated: () {
-        debugPrint('Editor has been loaded');
-        // setHtmlText('Testing text on load');
-        controller.setText(htmlContent);
-      },
-      onEditorResized: (height) => debugPrint('Editor resized $height'),
-      onSelectionChanged: (sel) {
-        debugPrint('index ${sel.index}, range ${sel.length}');
-        setState(() {
-          selectedTextlength = sel.length ?? 0;
-          selectedTextPosition = sel.index ?? 0;
-        });
-      },
-      navigationDelegate: (navigation) {
-        print(navigation.content.source);
-        if (navigation.content.source.contains('youtube.com')) {
-          showdialog(context, navigation.content.source);
-          return NavigationDecision.prevent;
-        } else {
-          print('other videos or link trying to play here also');
-          return NavigationDecision.navigate;
-        }
-      },
-      onVerticalScrollChange: (p0) {
-        if (kIsWeb) {
-          // print(
-          //     'scrollTop is ${p0.scrollTop}, currentPosition ${p0.currentPosition}');
+        text: htmlContent,
+        hintText: 'Hint text goes here',
+        controller: controller,
+        isEnabled: true,
+        ensureVisible: false,
+        minHeight: 500,
+        autoFocus: false,
+        textStyle: _editorTextStyle,
+        hintTextStyle: _hintTextStyle,
+        hintTextAlign: TextAlign.start,
+        //padding: const EdgeInsets.only(left: 10, top: 10),
+        hintTextPadding: const EdgeInsets.only(left: 20),
+        backgroundColor: _backgroundColor,
+        inputAction: InputAction.newline,
+        onEditingComplete: (s) => debugPrint('Editing completed $s'),
+        onFocusChanged: (focus) {
+          debugPrint('has focus $focus');
           setState(() {
-            _progress = p0.currentPosition ?? 0.0;
-            scrollPosition = p0.scrollTop ?? 0.0;
+            _hasFocus = focus;
           });
-        } else {
-          // print(
-          //     'scrollTop is ${p0.scrollTop}, currentPosition ${p0.currentPosition}');
+        },
+        videoLink: (videoLink) {
+          if (kIsWeb) {
+            //INITIALLY PLANNED TO USE THIS FOR VIDEO SAVING
+          } else {
+            if (videoLink.contains('youtube')) {
+              showdialog(context, videoLink);
+            } else {
+              shownormalVideoDialog(context, videoLink);
+            }
+          }
+        },
+
+        //  onTextChanged: (text) => debugPrint('widget text change $text'),
+        onEditorCreated: () {
+          debugPrint('Editor has been loaded');
+          controller.setText(htmlContent);
+        },
+        onEditorResized: (height) => debugPrint('Editor resized $height'),
+        onSelectionChanged: (sel) {
+          debugPrint('index ${sel.index}, range ${sel.length}');
           setState(() {
-            _progress = p0.currentPosition ?? 0.0;
-            scrollPosition = p0.scrollTop ?? 0.0;
+            selectedTextlength = sel.length ?? 0;
+            selectedTextPosition = sel.index ?? 0;
           });
+        },
+        webVideoTracking: (video) {
+          if (kIsWeb) {
+            setState(() {
+              // From here I can get the current Position and then pass
+              // it to the Map
+              videoProgressMap[video.videoUrl] = video.currentPosition;
+              totalProgressMap[video.videoUrl] = video.currentPosition;
+              _updateTotalProgress();
+              _getTotalProgress();
+              //THE ESSENCE OF THE CONTROLLER MAP IS FOR RESUMPTION
+              //FROM WHERE THE VIDEO LEFT OFF
+              controllerMap[video.videoUrl] = video.currentPosition;
+            });
+          }
+        },
+        onVerticalScrollChange: (p0) {
+          if (kIsWeb) {
+            // print(
+            //     'scrollTop is ${p0.scrollTop}, currentPosition ${p0.currentPosition}');
+            setState(() {
+              _progress = p0.currentPosition ?? 0.0;
+              scrollength = p0.maxScroll ?? 0.0;
+              totalProgressMap['scrollPosition'] = p0.scrollTop;
+              _getTotalProgress();
+            });
+          } else {
+            // print(
+            //     'scrollTop is ${p0.scrollTop}, currentPosition ${p0.currentPosition}');
+            setState(() {
+              _progress = p0.currentPosition ?? 0.0;
+              scrollength = p0.maxScroll ?? 0.0;
+              totalProgressMap['scrollPosition'] = p0.scrollTop;
+              _getTotalProgress();
+            });
+          }
+        },
+        lastScrollPosition: totalProgressMap['scrollPosition'],
+        videosDuration: //TESTING SCENARIO FOR VIDEO RESUMPTION ON THE WEB SIDE
+         const {
+          'https://www.youtube.com/embed/dQw4w9WgXcQ?enablejsapi=1':
+              13055.963938964844,
+          'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4':
+              13749.145999999999,
+          'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4':
+              323413.349
         }
-      },
-      lastScrollPosition: dataFromFirestore.lastScrollPosition,
-      // youtubeLastPosition: dataFromFirestore.youtubeLastPosition
-    );
+
+        );
   }
 
   Widget toolbar() {
@@ -710,7 +804,7 @@ const String htmlContent = '''
     <h2>Image Example</h2>
     <p><div><img src="https://hips.hearstapps.com/hmg-prod/images/bright-forget-me-nots-royalty-free-image-1677788394.jpg" alt="Flowers image"></div></p>
     <h2>IFrame Example</h2>
-    <p><iframe width="520" height="300" src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe></p>
+    <iframe width="520" height="300" src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe>
     </ul>
     <h2>Video Example</h2>
     <video width="320" height="240" controls>
@@ -725,12 +819,9 @@ const String htmlContent = '''
   <figcaption> Hello World</figcaption>
 </video>
 <h2>Another Random Image</h2>
-<p><img src="https://www.shutterstock.com/shutterstock/photos/2056485080/display_1500/stock-vector-address-and-navigation-bar-icon-business-concept-search-www-http-pictogram-d-concept-2056485080.jpg" alt="Flowers image"></p>
+<p><img
+ src="https://www.shutterstock.com/shutterstock/photos/2056485080/display_1500/stock-vector-address-and-navigation-bar-icon-business-concept-search-www-http-pictogram-d-concept-2056485080.jpg" alt="Flower Image"></p>
   </article>
 </body>
 </html>
 ''';
-
-final dataFromFirestore = QuillProgressController(
-  lastScrollPosition: 450,
-);
