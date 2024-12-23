@@ -26,7 +26,6 @@ class _MobileYoutubeVideoWidgetState extends State<MobileYoutubeVideoWidget>
     with WidgetsBindingObserver {
   late YoutubePlayerController _youtubecontroller;
 
-
   @override
   void initState() {
     WidgetsBinding.instance.addObserver(this);
@@ -60,7 +59,7 @@ class _MobileYoutubeVideoWidgetState extends State<MobileYoutubeVideoWidget>
     return Dialog(
         child: YoutubePlayerBuilder(
       onExitFullScreen: () {
-        SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+        //  SystemChrome.setPreferredOrientations(DeviceOrientation.values);
       },
       player: YoutubePlayer(
         controller: _youtubecontroller,

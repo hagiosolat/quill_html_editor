@@ -1,3 +1,4 @@
+import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
@@ -22,19 +23,37 @@ class VideoWidget extends StatefulWidget {
 
 class _WebVideoWidgetState extends State<VideoWidget> {
   late VideoPlayerController _videoController;
+  late ChewieController _chewieController;
+
+  Future<void> initializeController() async {
+    try {
+      await _videoController.initialize().then((_) {
+        setState(() {
+          _videoController.seekTo(widget.positioning);
+        });
+      });
+
+      _chewieController = ChewieController(
+        videoPlayerController: _videoController,
+        autoInitialize: true,
+        autoPlay: true,
+        showOptions: false,
+        showControls: true,
+      );
+    } catch (e) {
+      print(e);
+    }
+  }
+
   @override
   void initState() {
     _videoController =
         VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
 
-    _videoController.initialize().then((_) {
-      setState(() {
-        _videoController.seekTo(widget.positioning);
-      });
-    });
+    initializeController();
 
     // widget.videoDuration(_videoDuration);
-    _videoController.play();
+    //  _videoController.play();
 
     _videoController.addListener(() {
       if (_videoController.value.isPlaying) {
@@ -53,6 +72,7 @@ class _WebVideoWidgetState extends State<VideoWidget> {
   @override
   void dispose() {
     _videoController.dispose();
+    _chewieController.dispose();
     super.dispose();
   }
 
@@ -73,22 +93,25 @@ class _WebVideoWidgetState extends State<VideoWidget> {
                       },
                       icon: const Icon(Icons.cancel)),
                   AspectRatio(
-                    aspectRatio: _videoController.value.aspectRatio,
-                    child: VideoPlayer(_videoController),
-                  ),
-                  Text(
-                      'Video Duration: ${_videoController.value.position.inMinutes}: ${_videoController.value.position.inSeconds.remainder(60)}'),
-                  IconButton(
-                      onPressed: () {
-                        setState(() {
-                          _videoController.value.isPlaying
-                              ? _videoController.pause()
-                              : _videoController.play();
-                        });
-                      },
-                      icon: Icon(_videoController.value.isPlaying
-                          ? Icons.pause
-                          : Icons.play_arrow))
+                      aspectRatio: 16 / 9,
+                      child: Chewie(controller: _chewieController)),
+                  // AspectRatio(
+                  //   aspectRatio: _videoController.value.aspectRatio,
+                  //   child: VideoPlayer(_videoController),
+                  // ),
+                  // Text(
+                  //     'Video Duration: ${_videoController.value.position.inMinutes}: ${_videoController.value.position.inSeconds.remainder(60)}'),
+                  // IconButton(
+                  //     onPressed: () {
+                  //       setState(() {
+                  //         _videoController.value.isPlaying
+                  //             ? _videoController.pause()
+                  //             : _videoController.play();
+                  //       });
+                  //     },
+                  //     icon: Icon(_videoController.value.isPlaying
+                  //         ? Icons.pause
+                  //         : Icons.play_arrow))
                 ],
               ),
             )

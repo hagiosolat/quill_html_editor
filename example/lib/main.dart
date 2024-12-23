@@ -611,6 +611,23 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             }
           }
         },
+        //Call back for the button to show that the read function is completed
+        watchedVideo: (videolink) {
+          if (kIsWeb) {
+          } else {
+            setState(() {
+              videoProgressMap[videolink] = 60070;
+              totalProgressMap[videolink] = 60070;
+              _updateTotalProgress();
+              _getTotalProgress();
+
+              //THIS SHOULD BE THAT THE CONTROLLERMAP IS NOW AT THE END
+              //OF THE VIDEO
+              //SO WHEN IT IS RESUMED, IT WILL START FROM THE BEGIIING
+              controllerMap[videolink] = const Duration(milliseconds: 60070);
+            });
+          }
+        },
 
         //  onTextChanged: (text) => debugPrint('widget text change $text'),
         onEditorCreated: () {
@@ -663,16 +680,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         },
         lastScrollPosition: totalProgressMap['scrollPosition'],
         videosDuration: //TESTING SCENARIO FOR VIDEO RESUMPTION ON THE WEB SIDE
-         const {
+            const {
           'https://www.youtube.com/embed/dQw4w9WgXcQ?enablejsapi=1':
               13055.963938964844,
           'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4':
               13749.145999999999,
           'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4':
               323413.349
-        }
-
-        );
+        });
   }
 
   Widget toolbar() {
@@ -802,7 +817,7 @@ const String htmlContent = '''
       </tr>
     </table>
     <h2>Image Example</h2>
-    <p><div><img src="https://hips.hearstapps.com/hmg-prod/images/bright-forget-me-nots-royalty-free-image-1677788394.jpg" alt="Flowers image"></div></p>
+    <p><img src="https://hips.hearstapps.com/hmg-prod/images/bright-forget-me-nots-royalty-free-image-1677788394.jpg" alt="Flowers image"></p>
     <h2>IFrame Example</h2>
     <iframe width="520" height="300" src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe>
     </ul>
@@ -813,7 +828,7 @@ const String htmlContent = '''
   <figcaption> Hello World</figcaption>
 </video>
 <h2>Another Video Example</h2>
-    <video width="320" height="240" controls>
+   <video width="320" height="240" controls>
   <source src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" type="video/mp4">
   Your browser does not support the video tag.
   <figcaption> Hello World</figcaption>

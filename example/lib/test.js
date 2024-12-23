@@ -1,423 +1,1080 @@
-
-const thumbnailUrl = await generateThumbnail(videoSrc);
-const range = quilleditor.getSelection(true);
-quilleditor.insertEmbed(range.index, 'videoThumbnail', {
-    src: src,
-    videoUrl: videoSrc,
-    alt: alt
-});
-
-
-
-async function setHtmlText(htmlString) {
-    console.log('*****&&&****&&&*****&&&*****&&&&&******&&&******&&&&&*****&&&&****&&&&****');
-    try {
-        console.log('*****&&&****&&&*****&&&*****&&&&&******&&&******&&&&&*****&&&&****&&&&****');
-        quilleditor.enable(false);
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = htmlString;
-
-        let index = quilleditor.getLength();
-
-        Array.from(tempDiv.childNodes).forEach(async (node) => {
-
-
-            if (node.nodeType === 1) {
-                if (node.tagName === 'video' || node.tagName === 'source') {
-
-                    const videoUrl = node.querySelector('source')?.getAttribute('src') || node.getAttribute('src');
-
-                    if (videoUrl) {
-                        console.log('*****&&&****&&&*****&&&*****&&&&&******&&&******&&&&&*****&&&&****&&&&****');
-                        quilleditor.insertEmbed(index, 'videothumbnail', videoUrl);
-
-                        index += 1;
-                    }
-                } else {
-
-                    quilleditor.clipboard.dangerouslyPasteHTML(index, node.outerHTML || node.textContent);
-                    index = quilleditor.getLength();
-                }
-            }
-
-        });
-        quilleditor.getSelection(quilleditor.getLength(), Quill.source.SILENT);
-
-
-
-
-        //   const modifiedHtml = await replaceVideoWithThumbnail(htmlString);
-
-        //  console.log(`\${modifiedHtml}`);
-        //   console.log('*****&&&****&&&*****&&&*****&&&&&******&&&******&&&&&*****&&&&****&&&&****');
-        //   quilleditor.enable(false);
-        //   quilleditor.clipboard.dangerouslyPasteHTML(modifiedHtml);  
-        // quilleditor.clipboard.dangerouslyPasteHTML(htmlString);   
-    } catch (e) {
-        console.log('setHtmlText', e);
-    }
-    setTimeout(() => quilleditor.enable($isEnabled), 10);
-    return '';
-}
-
-
-async function setHtmlText(htmlString) {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = htmlString;
-
-    let index = quilleditor.getLength();
-
-    for (const node of tempDiv.childNodes) {
-        index = await processNode(node, index);//update the index after processing
-    }
-
-    quilleditor.setSelection(quilleditor.getLength(), Quill.sources.SILENT);
-}
-
-
-async function processNode(node, index) {
-    switch (node.nodeType) {
-        case 1:
-            return await handleElementNode(node, index);
-        case 3:
-            return await handleTextNode(node, index);
-        case 4:
-            return await handleCommentNode(node, index);
-        default:
-            console.warn('Unknown node type:', node.nodeType);
-            return index;
-    }
-}
-
-
-
-
-
-///Generate the video List and convert it to a container with the thumbnail
-async function replaceVideoWithThumbnail(htmlContent) {
-    //Create a temporary element to hold the HTML content
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = htmlContent;
-
-    const videos = tempDiv.querySelectorAll('video');
-
-    const iframes = tempDiv.querySelectorAll('iframe');
-
-    for (let video of videos) {
-        const width = video.getAttribute('width');
-        const height = video.getAttribute('height');
-        const videoSrc = video.getAttribute('src') || video.querySelector('source').getAttribute('src');
-        if (videoSrc) {
-            try {
-
-                const thumbnailUrl = await generateThumbnail(videoSrc);
-
-                const thumbnailWithButton = insertThumbnailWithPlayButton(thumbnailUrl, videoSrc, width, height);
-
-
-                video.parentNode.replaceChild(thumbnailWithButton, video);
-
-
-            } catch (error) {
-                console.log('Error generating thumbnail:', error);
-            }
-        }
-    }
-
-    for (let iframe of iframes) {
-        const videoSrc = iframe.getAttribute('src');
-
-        if (videoSrc) {
-            try {
-                const thumbnailUrl = await getYouTubeThumbnail(url);
-                const thumbnailWithButton = insertThumbnailWithPlayButton(thumbnailUrl, videoSrc);
-
-                iframe.parentNode.replaceChild(thumbnailWithButton, iframe);
-
-            } catch (e) {
-                console.log('Error generating thumbnail:', e);
-            }
-        }
-    }
-
-
-    return tempDiv.innerHTML; //Return the modified HTML             
-}
-
-
-function getYouTubeThumbnail(url) {
-
-
-    // Regular expression to extract the video ID from a YouTube URL
-    const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|embed|e)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-    const match = url.match(regex);
-
-    if (match && match[1]) {
-        const videoId = match[1];
-
-        // Construct different thumbnail URLs
-        const thumbnails =
-            `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-
-
-
-        return thumbnails;
-    } else {
-        console.error('Invalid YouTube URL');
-        return null;
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
-///Generate the video List and convert it to a container with the thumbnail
-async function replaceVideoWithThumbnail(htmlContent) {
-    //Create a temporary element to hold the HTML content
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = htmlContent;
-
-    const videos = tempDiv.querySelectorAll('video');
-    // const iframes = tempDiv.querySelectorAll('iframe');
-
-
-    for (let iframe of iframes) {
-
-        //       const videoSrc = iframe.getAttribute('src');
-
-        //        if (videoSrc) {
-        //           try {
-        //           Console.log(`\${videoSrc}`);
-        //           const thumbnailUrl = await getYouTubeThumbnail(url);
-        //           const thumbnailWithButton = insertThumbnailWithPlayButton(thumbnailUrl, videoSrc);
-
-        //           iframe.parentNode.replaceChild(thumbnailWithButton, iframe);
-
-        //       } catch (e) {
-        //           console.log('Error generating videoThumbnail:', e);
-        //       }
-        //     }
-        //  }
-        for (let video of videos) {
-            const width = video.getAttribute('width');
-            const height = video.getAttribute('height');
-            const videoSrc = video.getAttribute('src') || video.querySelector('source').getAttribute('src');
-            if (videoSrc) {
-                try {
-                    //Create an <img> tag with the thumbnail URL
-                    console.log(`This is the width of the video \${width}`);
-                    console.log(`This is the height of the video \${height}`);
-
-                    const thumbnailUrl = await generateThumbnail(videoSrc);
-
-                    const thumbnailWithButton = insertThumbnailWithPlayButton(thumbnailUrl, videoSrc, width, height);
-
-
-                    video.parentNode.replaceChild(thumbnailWithButton, video);
-
-
-                } catch (error) {
-                    console.log('Error generating thumbnail:', error);
-                }
-            }
-        }
-
-
-        return tempDiv.innerHTML; //Return the modified HTML             
-    }
-
-
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-async function setHtmlText(htmlContent) {
-    // Parse the HTML string into a DOM structure
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = htmlContent;
-
-    let index = 0; // Keeps track of insertion index in Quill
-
-    // Recursive function to process each node
-    async function processNode(node) {
-        if (node.nodeType === Node.ELEMENT_NODE) {
-            if (node.tagName === 'VIDEO') {
-                // Handle video tags
-                const videoSource = node.querySelector('source');
-                if (videoSource) {
-                    const videoUrl = videoSource.getAttribute('src');
-                    // const thumbnailUrl = await generateThumbnail(videoUrl);
-
-                    // Insert video thumbnail as a custom blot
-                    quill.insertEmbed(index, 'videoThumbnail', videoUrl);
-                    index += 1; // Increment index for the next insert
-                }
-            } else {
-                // Recursively process child nodes
-                for (const childNode of node.childNodes) {
-                    await processNode(childNode);
-                }
-            }
-        } else if (node.nodeType === Node.TEXT_NODE) {
-            // Insert plain text
-            quill.insertText(index, node.textContent);
-            index += node.textContent.length;
-        }
-    }
-
-    // Start processing nodes
-    for (const childNode of tempDiv.childNodes) {
-        await processNode(childNode);
-    }
-}
-
-// Mock function to generate a thumbnail (replace with real logic)
-async function generateThumbnail(videoUrl) {
-    return 'https://via.placeholder.com/150?text=Video+Thumbnail'; // Placeholder
-}
-
-// Custom Video Blot Definition
-class CustomVideoBlot extends BlockEmbed {
+class VideoBlot extends BlockEmbed {
     static create(value) {
-        const node = super.create();
-        const { videoUrl, thumbnailUrl } = value;
+        let node = super.create(value);
 
-        // Create div container
-        const container = document.createElement('div');
-        container.classList.add('video-container');
-        container.style.position = 'relative';
-        container.style.display = 'inline-block';
+        if (value.url.includes('.mp4')) {
+            let video = document.createElement('video');
+            video.setAttribute('id', 'videoElement');
+            video.setAttribute('width', value.width || 520);
+            video.setAttribute('height', value.height || 300);
+            video.setAttribute('controls', true);
+            //PositionAttributor.add(node, 'relative');
 
-        // Create thumbnail image
-        const img = document.createElement('img');
-        img.src = thumbnailUrl;
-        img.alt = 'Video Thumbnail';
-        img.style.cursor = 'pointer';
-        img.style.display = 'block';
 
-        container.appendChild(img);
-        container.setAttribute('data-video-url', videoUrl);
+            let source = document.createElement('source');
+            source.setAttribute('src', `\${value.url}#t=0.3`);
+            source.setAttribute('type', 'video/mp4');
 
-        // Handle click event (optional)
-        img.addEventListener('click', () => {
-            alert(`Play video: ${videoUrl}`);
-        });
+            video.addEventListener('loadedmetadata', () => {
+                let key = value.url;
+                if (videoMap.hasOwnProperty(key)) {
+                    // console.log('This is something that happen');
+                    // console.log(videoMap[key]);
+                    video.currentTime = videoMap[key] * 0.001;
+                }
 
-        node.appendChild(container);
+            });
+
+            video.addEventListener('timeupdate', () => {
+
+                const currentTime = video.currentTime * 1000;
+                const duration = video.duration * 1000;
+                const progress = (currentTime / duration) * 100;
+                var postMap = {};
+                postMap['totalDuration'] = duration;
+                postMap['currentPosition'] = currentTime;
+                postMap['videoUrl'] = value.url;
+                if ($kIsWeb) {
+                    GetVideoTracking(JSON.stringify(postMap))
+                } else {
+                    GetVideoTracking.postMessage(JSON.stringify(postMap))
+                }
+            });
+
+            const buttonContainer = document.createElement('div');
+            textAlignAttr.add(buttonContainer, 'center');
+            marginTopAttr.add(buttonContainer, '8px');
+
+            const markAsReadButton = document.createElement('button');
+            markAsReadButton.innerText = 'Mark as Read';
+            paddingAttr.add(markAsReadButton, '8px 12px');
+            borderAttr.add(markAsReadButton, 'none');
+            BackgroundColorAttributor.add(markAsReadButton, 'green')
+            ColorAttributor.add(markAsReadButton, 'white');
+            borderRadiusAttr.add(markAsReadButton, '4px');
+            CursorAttributor.add(markAsReadButton, 'pointer');
+
+
+            markAsReadButton.addEventListener('click', () => {
+                console.log('Mark As read button pressed');
+                console.log(`\${value.id}`);
+            });
+
+            video.addEventListener('play', () => {
+            });
+
+            video.addEventListener('pause', () => {
+                if ($kIsWeb) {
+                } else {
+                }
+            });
+
+            video.addEventListener('ended', () => {
+                if ($kIsWeb) {
+                } else {
+                }
+            });
+            buttonContainer.appendChild(markAsReadButton);
+            node.appendChild(buttonContainer);
+            video.appendChild(source);
+            node.appendChild(video);
+
+        }
         return node;
     }
 
-    static value(domNode) {
-        const container = domNode.querySelector('.video-container');
+    static value(node) {
+        let source = node.querySelector('source');
+        let video = node.querySelector('video')
+
         return {
-            videoUrl: container.getAttribute('data-video-url'),
-            thumbnailUrl: container.querySelector('img').getAttribute('src'),
+            width: video.getAttribute('width'),
+            height: video.getAttribute('height'),
+            url: source ? source.getAttribute('src') : '',
         };
     }
 }
-
-CustomVideoBlot.blotName = 'video';
-CustomVideoBlot.tagName = 'div';
-Quill.register(CustomVideoBlot);
-
-// Usage Example
-const quill = new Quill('#editor', {
-    theme: 'snow',
-    modules: {
-        toolbar: true,
-    },
-});
-
-// Input HTML string
-const htmlContent = `
-    <h1>Sample Article</h1>
-    <p>This is some text before the video.</p>
-    <video width="320" height="240" controls>
-        <source src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4" type="video/mp4">
-    </video>
-    <p>This is some text after the video.</p>
-`;
-
-// Load HTML into Quill
-loadHtmlIntoQuill(quill, htmlContent);
+VideoBlot.blotName = 'div';
+VideoBlot.tagName = 'div';
+Quill.register(VideoBlot);
 
 
 
 
 
-///Generate the video List and convert it to a container with the thumbnail
-async function replaceVideoWithThumbnail(htmlContent) {
-    //Create a temporary element to hold the HTML content
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = htmlContent;
-
-    const videos = tempDiv.querySelectorAll('video');
-
-    const iframes = tempDiv.querySelectorAll('iframe');
-    console.log(`Printing the iframe here is what I am trying to do here right now \${iframes}`);
-
-    for (let iframe of iframes) {
-
-        const videoSrc = iframe.getAttribute('src');
 
 
-        if (videoSrc) {
-                   try {
-            Console.log(`\${videoSrc}`);
-            //           const thumbnailUrl = await getYouTubeThumbnail(url);
-            //           const thumbnailWithButton = insertThumbnailWithPlayButton(thumbnailUrl, videoSrc);
 
-            //           iframe.parentNode.replaceChild(thumbnailWithButton, iframe);
 
-                   } catch (e) {
-            console.log('Error generating videoThumbnail:', e);
+
+
+
+
+
+
+class VideoBlot extends BlockEmbed {
+    static create(value) {
+        let node = super.create(value);
+        node.setAttribute('id', 'videoElement');
+        node.setAttribute('width', value.width || 520);
+        node.setAttribute('height', value.height || 300);
+        node.setAttribute('controls', true);
+        //PositionAttributor.add(node, 'relative');
+
+
+        let source = document.createElement('source');
+        source.setAttribute('src', `\${value.url}#t=0.3`);
+        source.setAttribute('type', 'video/mp4');
+
+        node.addEventListener('loadedmetadata', () => {
+            let key = value.url;
+            if (videoMap.hasOwnProperty(key)) {
+                // console.log('This is something that happen');
+                // console.log(videoMap[key]);
+                node.currentTime = videoMap[key] * 0.001;
+            }
+
+        });
+
+        node.addEventListener('timeupdate', () => {
+
+            const currentTime = node.currentTime * 1000;
+            const duration = node.duration * 1000;
+            const progress = (currentTime / duration) * 100;
+            var postMap = {};
+            postMap['totalDuration'] = duration;
+            postMap['currentPosition'] = currentTime;
+            postMap['videoUrl'] = value.url;
+            if ($kIsWeb) {
+                GetVideoTracking(JSON.stringify(postMap))
+            } else {
+                GetVideoTracking.postMessage(JSON.stringify(postMap))
+            }
+        });
+
+        const buttonContainer = document.createElement('div');
+        textAlignAttr.add(buttonContainer, 'center');
+        marginTopAttr.add(buttonContainer, '8px');
+
+        const markAsReadButton = document.createElement('button');
+        markAsReadButton.innerText = 'Mark as Read';
+        paddingAttr.add(markAsReadButton, '8px 12px');
+        borderAttr.add(markAsReadButton, 'none');
+        BackgroundColorAttributor.add(markAsReadButton, 'green')
+        ColorAttributor.add(markAsReadButton, 'white');
+        borderRadiusAttr.add(markAsReadButton, '4px');
+        CursorAttributor.add(markAsReadButton, 'pointer');
+
+
+        node.addEventListener('play', () => {
+        });
+
+        node.addEventListener('pause', () => {
+            if ($kIsWeb) {
+            } else {
+            }
+        });
+
+        node.addEventListener('ended', () => {
+            if ($kIsWeb) {
+            } else {
+            }
+        });
+        buttonContainer.appendChild(markAsReadButton)
+        node.appendChild(buttonContainer);
+        node.appendChild(source);
+        return node;
+    }
+
+    static value(node) {
+        let source = node.querySelector('source');
+
+        return {
+            width: node.getAttribute('width'),
+            height: node.getAttribute('height'),
+            url: source ? source.getAttribute('src') : '',
+        };
+    }
+}
+VideoBlot.blotName = 'video';
+VideoBlot.tagName = 'video';
+Quill.register(VideoBlot);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+let BlockEmbed = Quill.import('blots/block/embed');
+class IframeBlot extends BlockEmbed {
+    static create(value) {
+        let node = super.create(value);
+
+        if (value.url.includes('.youtube')) {
+
+
+        }
+        node.setAttribute('id', 'videoframe');
+        node.setAttribute('width', value.width || 520);
+        node.setAttribute('height', value.height || 300);
+        node.setAttribute('src', `\${value.src}?enablejsapi=1`);
+        node.setAttribute('allowfullscreen', true);
+
+        node.addEventListener('load', () => {
+            IframeBlot.addYoutubeTracking(node);
+        });
+
+        return node;
+    }
+
+    static value(node) {
+        return {
+            width: node.getAttribute('width'),
+            height: node.getAttribute('height'),
+            src: node.getAttribute('src')
+        };
+    }
+
+    static addYoutubeTracking(node) {
+        const player = new YT.Player(node.id, {
+            events: {
+                'onReady': (event) => this.onPlayerReady(event, node),
+                'onStateChange': (event) => this.onPlayerStateChange(event, node)
+            }
+        });
+    }
+
+    static onPlayerReady(event, node) {
+        const key = node.getAttribute('src');
+        console.log(key);
+        if (videoMap.hasOwnProperty(key)) {
+            console.log('This is something that happen');
+            const savedPosition = videoMap[key] * 0.001;
+            event.target.seekTo(parseFloat(savedPosition), true); //Resume playback
+        }
+        // console.log('Testing the Youtube videos when ready for playing or resumption');
+    }
+
+    static onPlayerStateChange(event, node) {
+        if (event.data == YT.PlayerState.PLAYING) {
+            IframeBlot.trackProgress(event.target, node);
+        } else if (event.data == YT.PlayerState.ENDED) {
+            console.log('Video has ended.');
+        }
+    }
+
+    static trackProgress(player, node) {
+        const duration = player.getDuration();
+        const videoUrl = node.getAttribute('src');
+        const trackInterval = setInterval(() => {
+            if (player.getPlayerState() === YT.PlayerState.PLAYING) {
+                const currentTime = player.getCurrentTime();
+                var postMap = {};
+                postMap['totalDuration'] = duration * 1000;
+                postMap['currentPosition'] = currentTime * 1000;
+                postMap['videoUrl'] = videoUrl;
+                const progress = (currentTime / duration) * 100;
+                if ($kIsWeb) {
+                    GetVideoTracking(JSON.stringify(postMap));
+                    //   GetVideoTracking(progress.toFixed(2));
+                } else {
+                    GetVideoTracking.postMessage(JSON.stringify(postMap))
+                    // GetVideoTracking.postMessage(progress.toFixed(2));
+                }
+            } else {
+                clearInterval(trackInterval);
+            }
+        }, 1000);
+    }
+}
+IframeBlot.blotName = 'regex';
+IframeBlot.tagName = 'iframe';
+
+
+Quill.register(IframeBlot);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class IframeBlot extends BlockEmbed {
+    static create(value) {
+        let node = super.create(value);
+
+        if (value.url.includes('youtube')) {
+            let video = document.createElement('iframe');
+            iframe.setAttribute('id', 'videoframe');
+            iframe.setAttribute('width', value.width || 520);
+            iframe.setAttribute('height', value.height || 300);
+            iframe.setAttribute('src', `\${value.src}?enablejsapi=1`);
+            iframe.setAttribute('allowfullscreen', true);
+
+            const buttonContainer = document.createElement('div');
+            textAlignAttr.add(buttonContainer, 'center');
+            marginTopAttr.add(buttonContainer, '8px');
+
+            const markAsReadButton = document.createElement('button');
+            markAsReadButton.innerText = 'Mark as Read';
+            paddingAttr.add(markAsReadButton, '8px 12px');
+            borderAttr.add(markAsReadButton, 'none');
+            BackgroundColorAttributor.add(markAsReadButton, 'green')
+            ColorAttributor.add(markAsReadButton, 'white');
+            borderRadiusAttr.add(markAsReadButton, '4px');
+            CursorAttributor.add(markAsReadButton, 'pointer');
+
+            // iframe.addEventListener('load', () => {
+            //     IframeBlot.addYoutubeTracking(node);
+            // });
+
+
+            buttonContainer.appendChild(markAsReadButton);
+            node.appendChild(buttonContainer);
+            node.appendChild(iframe);
+
+        }
+        return node;
+    }
+
+    // static value(node) {
+    //     let iframe = node.querySelector('iframe');
+    //     return {
+    //         width: iframe.getAttribute('width'),
+    //         height: iframe.getAttribute('height'),
+    //         src: iframe.getAttribute('src')
+    //     };
+    // }
+
+
+    static onPlayerReady(event, node) {
+        const key = node.getAttribute('src');
+        console.log(key);
+        if (videoMap.hasOwnProperty(key)) {
+            console.log('This is something that happen');
+            const savedPosition = videoMap[key] * 0.001;
+            event.target.seekTo(parseFloat(savedPosition), true); //Resume playback
+        }
+        // console.log('Testing the Youtube videos when ready for playing or resumption');
+    }
+
+    static onPlayerStateChange(event, node) {
+        if (event.data == YT.PlayerState.PLAYING) {
+            IframeBlot.trackProgress(event.target, node);
+        } else if (event.data == YT.PlayerState.ENDED) {
+            console.log('Video has ended.');
+        }
+    }
+
+    static trackProgress(player, node) {
+        const duration = player.getDuration();
+        const videoUrl = node.getAttribute('src');
+        const trackInterval = setInterval(() => {
+            if (player.getPlayerState() === YT.PlayerState.PLAYING) {
+                const currentTime = player.getCurrentTime();
+                var postMap = {};
+                postMap['totalDuration'] = duration * 1000;
+                postMap['currentPosition'] = currentTime * 1000;
+                postMap['videoUrl'] = videoUrl;
+                const progress = (currentTime / duration) * 100;
+                if ($kIsWeb) {
+                    GetVideoTracking(JSON.stringify(postMap));
+                    //   GetVideoTracking(progress.toFixed(2));
+                } else {
+                    GetVideoTracking.postMessage(JSON.stringify(postMap))
+                    // GetVideoTracking.postMessage(progress.toFixed(2));
+                }
+            } else {
+                clearInterval(trackInterval);
+            }
+        }, 1000);
+    }
+}
+IframeBlot.blotName = 'regex';
+IframeBlot.tagName = 'iframe';
+Quill.register(IframeBlot);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class VideoBlot extends BlockEmbed {
+    static create(value) {
+        let node = super.create(value);
+        PositionAttributor.add(node, 'relative');
+
+        if (value.url.includes('.mp4')) {
+            let video = document.createElement('video');
+            video.setAttribute('id', 'videoElement');
+            video.setAttribute('width', value.width || 520);
+            video.setAttribute('height', value.height || 300);
+            video.setAttribute('controls', true);
+            //PositionAttributor.add(node, 'relative');
+
+
+            let source = document.createElement('source');
+            source.setAttribute('src', `\${value.url}#t=0.3`);
+            source.setAttribute('type', 'video/mp4');
+
+            video.addEventListener('loadedmetadata', () => {
+                let key = value.url;
+                if (videoMap.hasOwnProperty(key)) {
+                    // console.log('This is something that happen');
+                    // console.log(videoMap[key]);
+                    video.currentTime = videoMap[key] * 0.001;
+                }
+
+            });
+
+            video.addEventListener('timeupdate', () => {
+
+                const currentTime = video.currentTime * 1000;
+                const duration = video.duration * 1000;
+                const progress = (currentTime / duration) * 100;
+                var postMap = {};
+                postMap['totalDuration'] = duration;
+                postMap['currentPosition'] = currentTime;
+                postMap['videoUrl'] = value.url;
+                if ($kIsWeb) {
+                    GetVideoTracking(JSON.stringify(postMap))
+                } else {
+                    GetVideoTracking.postMessage(JSON.stringify(postMap))
+                }
+            });
+
+            const buttonContainer = document.createElement('div');
+            textAlignAttr.add(buttonContainer, 'center');
+            marginTopAttr.add(buttonContainer, '8px');
+
+            const markAsReadButton = document.createElement('button');
+            markAsReadButton.innerText = 'Mark as Read';
+            paddingAttr.add(markAsReadButton, '8px 12px');
+            borderAttr.add(markAsReadButton, 'none');
+            BackgroundColorAttributor.add(markAsReadButton, 'green')
+            ColorAttributor.add(markAsReadButton, 'white');
+            borderRadiusAttr.add(markAsReadButton, '4px');
+            CursorAttributor.add(markAsReadButton, 'pointer');
+
+
+            markAsReadButton.addEventListener('click', () => {
+                console.log('Mark As read button pressed');
+                console.log(`\${value.id}`);
+            });
+
+            video.addEventListener('play', () => {
+            });
+
+            video.addEventListener('pause', () => {
+                if ($kIsWeb) {
+                } else {
+                }
+            });
+
+            video.addEventListener('ended', () => {
+                if ($kIsWeb) {
+                } else {
+                }
+            });
+            video.appendChild(source);
+            node.appendChild(video);
+            buttonContainer.appendChild(markAsReadButton);
+            node.appendChild(buttonContainer);
+
+        }
+
+        else if (value.url.includes('youtube')) {
+            const iframe = document.createElement('iframe');
+            iframe.setAttribute('src', value.url);
+            iframe.setAttribute('width', value.width || '560');
+            iframe.setAttribute('height', value.height || '315');
+            iframe.setAttribute('frameborder', '0');
+            iframe.setAttribute(
+                'allow',
+                'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+            );
+            iframe.setAttribute('allowfullscreen', true);
+
+
+            // Create the button
+            const button = document.createElement('button');
+            button.innerText = 'Mark as Watched';
+            button.style.marginTop = '10px';
+            button.style.padding = '5px 10px';
+            button.style.backgroundColor = '#007BFF';
+            button.style.color = '#fff';
+            button.style.border = 'none';
+            button.style.cursor = 'pointer';
+            button.style.borderRadius = '5px';
+
+            node.appendChild(iframe);
+            node.appendChild(button);
+
+        }
+        return node;
+    }
+
+    static value(node) {
+        let source = node.querySelector('source');
+        let video = node.querySelector('video')
+        const iframe = node.querySelector('iframe');
+
+        if (source != null) {
+            return {
+                width: vvideo.getAttribute('width'),
+                height: video.getAttribute('height'),
+                url: source ? source.getAttribute('src') : '',
+            };
+        } else {
+            return {
+                url: iframe ? iframe.getAttribute('src') : '',
+                width: iframe ? iframe.getAttribute('width') : '560',
+                height: iframe ? iframe.getAttribute('height') : '315',
+            };
         }
     }
 }
-//    for(let video of videos){
-//      const width = video.getAttribute('width');
-//      const height = video.getAttribute('height');
-//     const videoSrc = video.getAttribute('src') || video.querySelector('source').getAttribute('src');
-//     if(videoSrc){
-//         try {
-//               //Create an <img> tag with the thumbnail URL
-//                    console.log(`This is the width of the video \${width}`);
-//                    console.log(`This is the height of the video \${height}`);
-
-//                    const thumbnailUrl = await generateThumbnail(videoSrc);
-
-//                    const thumbnailWithButton = insertThumbnailWithPlayButton(thumbnailUrl, videoSrc, width, height);
+VideoBlot.blotName = 'div';
+VideoBlot.tagName = 'div';
+//videoBlot.className = 'videoContainer'
+Quill.register(VideoBlot);
 
 
-//                       video.parentNode.replaceChild(thumbnailWithButton, video);
 
 
-//                 } catch(error) {
-//          console.log('Error generating thumbnail:', error);
-//         }
-//     }
-//  }    
-return tempDiv.innerHTML; //Return the modified HTML             
-      }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class VideoBlot extends BlockEmbed {
+    static create(value) {
+        let node = super.create(value);
+        // PositionAttributor.add(node, 'relative');
+
+        if (value.url.includes('.mp4')) {
+
+            console.log('This is the video Log for videos');
+            let video = document.createElement('video');
+            video.setAttribute('id', 'videoElement');
+            video.setAttribute('width', value.width || 520);
+            video.setAttribute('height', value.height || 300);
+            video.setAttribute('controls', true);
+            //PositionAttributor.add(node, 'relative');
+
+
+            let source = document.createElement('source');
+            source.setAttribute('src', `\${value.url}#t=0.3`);
+            source.setAttribute('type', 'video/mp4');
+
+            video.addEventListener('loadedmetadata', () => {
+                let key = value.url;
+                if (videoMap.hasOwnProperty(key)) {
+                    // console.log('This is something that happen');
+                    // console.log(videoMap[key]);
+                    video.currentTime = videoMap[key] * 0.001;
+                }
+
+            });
+
+            video.addEventListener('timeupdate', () => {
+
+                const currentTime = video.currentTime * 1000;
+                const duration = video.duration * 1000;
+                const progress = (currentTime / duration) * 100;
+                var postMap = {};
+                postMap['totalDuration'] = duration;
+                postMap['currentPosition'] = currentTime;
+                postMap['videoUrl'] = value.url;
+                if ($kIsWeb) {
+                    GetVideoTracking(JSON.stringify(postMap))
+                } else {
+                    GetVideoTracking.postMessage(JSON.stringify(postMap))
+                }
+            });
+
+            const buttonContainer = document.createElement('div');
+            textAlignAttr.add(buttonContainer, 'center');
+            marginTopAttr.add(buttonContainer, '8px');
+
+            const markAsReadButton = document.createElement('button');
+            markAsReadButton.innerText = 'Mark as Read';
+            paddingAttr.add(markAsReadButton, '8px 12px');
+            borderAttr.add(markAsReadButton, 'none');
+            BackgroundColorAttributor.add(markAsReadButton, 'green')
+            ColorAttributor.add(markAsReadButton, 'white');
+            borderRadiusAttr.add(markAsReadButton, '4px');
+            CursorAttributor.add(markAsReadButton, 'pointer');
+
+
+            markAsReadButton.addEventListener('click', () => {
+                console.log('Mark As read button pressed');
+                console.log(`\${value.id}`);
+            });
+
+            video.addEventListener('play', () => {
+            });
+
+            video.addEventListener('pause', () => {
+                if ($kIsWeb) {
+                } else {
+                }
+            });
+
+            video.addEventListener('ended', () => {
+                if ($kIsWeb) {
+                } else {
+                }
+            });
+            video.appendChild(source);
+            node.appendChild(video);
+            buttonContainer.appendChild(markAsReadButton);
+            node.appendChild(buttonContainer);
+
+        }
+
+        //   else if(value.url.includes('youtube')) {
+        //             const iframe = document.createElement('iframe');
+        //     iframe.setAttribute('src', value.url);
+        //     iframe.setAttribute('width', value.width || '560');
+        //    iframe.setAttribute('height', value.height || '315');
+        //    iframe.setAttribute('frameborder', '0');
+        //   iframe.setAttribute(
+        //   'allow',
+        //   'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+        // );
+        //   iframe.setAttribute('allowfullscreen', true);
+
+
+        //     // Create the button
+        // const button = document.createElement('button');
+        // button.innerText = 'Mark as Watched';
+        // button.style.marginTop = '10px';
+        // button.style.padding = '5px 10px';
+        // button.style.backgroundColor = '#007BFF';
+        // button.style.color = '#fff';
+        // button.style.border = 'none';
+        // button.style.cursor = 'pointer';
+        // button.style.borderRadius = '5px';
+        // node.appendChild(iframe);
+        // node.appendChild(button);  
+        //   }
+        return node;
+    }
+
+    static value(node) {
+        let source = node.querySelector('source');
+        let video = node.querySelector('video')
+        // const iframe = node.querySelector('iframe');
+
+        return {
+            width: vvideo.getAttribute('width'),
+            height: video.getAttribute('height'),
+            url: source ? source.getAttribute('src') : '',
+        };
+
+        // else {
+        //  return {
+        //   url: iframe ? iframe.getAttribute('src') : '',
+        //   width: iframe ? iframe.getAttribute('width') : '560',
+        //   height: iframe ? iframe.getAttribute('height') : '315',
+        // };
+        //    }      
+    }
+}
+VideoBlot.blotName = 'div';
+VideoBlot.tagName = 'div';
+//videoBlot.className = 'videoContainer'
+Quill.register(VideoBlot);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function wrapMediaWithDiv() {
+    // Get all video and iframe tags
+    const mediaElements = document.querySelectorAll('video, iframe');
+
+    mediaElements.forEach((media) => {
+        // Create a div element
+        const wrapperDiv = document.createElement('div');
+        wrapperDiv.style.position = 'relative'; // Example styling
+        wrapperDiv.style.margin = '10px 0';    // Add some spacing if needed
+
+        // Insert the div before the media element
+        media.parentNode.insertBefore(wrapperDiv, media);
+
+        // Move the media element inside the div
+        wrapperDiv.appendChild(media);
+    });
+}
+
+// Call the function
+wrapMediaWithDiv();
