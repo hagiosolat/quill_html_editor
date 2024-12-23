@@ -61,6 +61,7 @@ class QuillHtmlEditor extends StatefulWidget {
     this.lastScrollPosition = 0,
     this.videoLink,
     this.videosDuration,
+    this.watchedVideo,
   }) : super(key: controller._editorKey);
 
   /// [text] to set initial text to the editor, please use text
@@ -176,6 +177,8 @@ class QuillHtmlEditor extends StatefulWidget {
 
   /// [videosDuration] to get the duration of the saved videos
   final Map<String, dynamic>? videosDuration;
+
+  final Function(String)? watchedVideo;
 
   @override
   QuillHtmlEditorState createState() => QuillHtmlEditorState();
@@ -499,6 +502,15 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                   } catch (e) {
                     print(e.toString());
                   }
+                }),
+            DartCallback(
+                name: 'WatchVideo',
+                callBack: (message) {
+                  try {
+                    if (message != null) {
+                      widget.watchedVideo!(message.toString());
+                    }
+                  } catch (e) {}
                 })
           },
           webSpecificParams: const WebSpecificParams(
@@ -1123,9 +1135,26 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                  RightAttributor.add(playButton, '200px');
                  LeftAttributor.add(playButton, '100px') 
 
+
+          // const buttonContainer = document.createElement('div');
+          // textAlignAttr.add(buttonContainer,'center');
+          // marginTopAttr.add(buttonContainer, '8px');
+
+           const markAsReadButton = document.createElement('button');
+           PositionAttributor.add(markAsReadButton,'absolute');
+           markAsReadButton.innerText = 'Mark as Read';
+           paddingAttr.add(markAsReadButton, '8px 12px');
+           borderAttr.add(markAsReadButton, 'none');
+            TopAttributor.add(markAsReadButton,'150px');
+           BackgroundColorAttributor.add(markAsReadButton, 'green')
+           ColorAttributor.add(markAsReadButton,'white');
+           borderRadiusAttr.add(markAsReadButton, '4px');
+          // WidthAttributor.add(markAsReadButton, '50px');
+           RightAttributor.add(markAsReadButton, '200px');
+           CursorAttributor.add(markAsReadButton, 'pointer');    
+
                 playButton.addEventListener('click',()=>{
                 let link = node.getAttribute('alt');
-               
                  if($kIsWeb){
                   //  GetVideoUrl(link);
                   } else {
@@ -1133,9 +1162,21 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                   }
                 // alert(`\${link}`);
               });
-               node.appendChild(playButton);    
+
+              markAsReadButton.addEventListener('click', ()=> {
+               console.log('Mark As read button pressed');
+               let link = node.getAttribute('alt');
+               if($kIsWeb){
+                //  WatchVideo(link);
+                } else {
+                  WatchVideo.postMessage(link);
+                }
+              });
+
+                 node.appendChild(markAsReadButton); 
+               node.appendChild(playButton);   
                   }  
-              node.appendChild(img);          
+              node.appendChild(img);        
               return node;
              }
              static value(node){
@@ -1151,171 +1192,236 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
           Quill.register('formats/image', ImageBlot)
          // Quill.register(ImageBlot);
 
+     
+         let BlockEmbed = Quill.import('blots/block/embed');
+         class VideoBlot extends BlockEmbed {
+         static create(value) {
+        let node = super.create(value);
+
+        if (value.url.includes('.mp4')) {
+            let video = document.createElement('video');
+            video.setAttribute('id', 'videoElement');
+            video.setAttribute('width', value.width || 520);
+            video.setAttribute('height', value.height || 300);
+            video.setAttribute('controls', true);
+            //PositionAttributor.add(node, 'relative');
 
 
-                  
-             let BlockEmbed = Quill.import('blots/block/embed');
+            let source = document.createElement('source');
+            source.setAttribute('src', `\${value.url}#t=0.3`);
+            source.setAttribute('type', 'video/mp4');
 
-              class IframeBlot extends BlockEmbed {
-                static create(value) {
-                 let node = super.create(value);
-                 node.setAttribute('id', 'videoframe');
-                 node.setAttribute('width', value.width || 520);
-                 node.setAttribute('height', value.height || 300);
-                 node.setAttribute('src', `\${value.src}?enablejsapi=1`);
-                 node.setAttribute('allowfullscreen',true);
-                 
-                   node.addEventListener('load', ()=> {
-                  IframeBlot.addYoutubeTracking(node);
-                  });
-
-                 return node;                
+            video.addEventListener('loadedmetadata', () => {
+                let key = value.url;
+                if (videoMap.hasOwnProperty(key)) {
+                    // console.log('This is something that happen');
+                    // console.log(videoMap[key]);
+                    video.currentTime = videoMap[key] * 0.001;
                 }
+            });
 
-                static value(node){
-                return {
-                 width: node.getAttribute('width'),
-                 height: node.getAttribute('height'),
-                 src: node.getAttribute('src')
-                };
-                }
+            video.addEventListener('timeupdate', () => {
 
-               static addYoutubeTracking(node) {
-              const player = new YT.Player(node.id, {
-               events: {
-                'onReady':(event) => this.onPlayerReady(event, node),
-                'onStateChange':(event) => this.onPlayerStateChange(event, node)
-                }
-               });
-             }
-
-                 static onPlayerReady(event,node) { 
-                   const key = node.getAttribute('src');
-                   console.log(key);
-                   if(videoMap.hasOwnProperty(key)){
-                    console.log('This is something that happen');
-                    const savedPosition = videoMap[key] * 0.001;
-                    event.target.seekTo(parseFloat(savedPosition), true); //Resume playback
-                  }                
-                   // console.log('Testing the Youtube videos when ready for playing or resumption');
-                  }
-
-             static onPlayerStateChange(event, node) {
-             if(event.data == YT.PlayerState.PLAYING) {
-              IframeBlot.trackProgress(event.target, node);
-             } else if (event.data == YT.PlayerState.ENDED){
-                console.log('Video has ended.');
-             }
-            }
-             
-             static trackProgress(player,node) {
-                const duration = player.getDuration();
-                const videoUrl = node.getAttribute('src');
-                const trackInterval = setInterval(() => {
-                if(player.getPlayerState() === YT.PlayerState.PLAYING) {
-                const currentTime = player.getCurrentTime();
-                var postMap = {};
-                postMap['totalDuration'] = duration * 1000;
-                postMap['currentPosition'] = currentTime * 1000;
-                postMap['videoUrl'] = videoUrl;
-                const progress = (currentTime/duration) * 100;
-                  if($kIsWeb){
-                   GetVideoTracking(JSON.stringify(postMap));
-                 //   GetVideoTracking(progress.toFixed(2));
-                  } else {
-                   GetVideoTracking.postMessage(JSON.stringify(postMap))
-                   // GetVideoTracking.postMessage(progress.toFixed(2));
-                  }
-                } else {
-                 clearInterval(trackInterval);
-                }
-                }, 1000);
-                }
-              }
-              IframeBlot.blotName = 'regex';
-              IframeBlot.tagName = 'iframe';
-             
-
-              Quill.register(IframeBlot); 
-
-              class VideoBlot extends BlockEmbed{
-               static create(value) {
-                 let node = super.create(value);
-                 node.setAttribute('id', 'videoElement');
-                 node.setAttribute('width', value.width || 520);
-                 node.setAttribute('height', value.height || 300);
-                 node.setAttribute('controls', true);
-                 PositionAttributor.add(node, 'relative');
-                 let source = document.createElement('source');
-                 source.setAttribute('src', `\${value.url}#t=0.3`);
-                 source.setAttribute('type', 'video/mp4');
-                
-                node.addEventListener('loadedmetadata', ()=> {
-                  let key = value.url;
-                  if(videoMap.hasOwnProperty(key)){
-                   // console.log('This is something that happen');
-                   // console.log(videoMap[key]);
-                    node.currentTime = videoMap[key] * 0.001;
-                  }
-
-                });
-
-                node.addEventListener('timeupdate', ()=> {
-               
-                const currentTime = node.currentTime * 1000;
-                const duration = node.duration * 1000;
+                const currentTime = video.currentTime * 1000;
+                const duration = video.duration * 1000;
                 const progress = (currentTime / duration) * 100;
                 var postMap = {};
                 postMap['totalDuration'] = duration;
                 postMap['currentPosition'] = currentTime;
                 postMap['videoUrl'] = value.url;
-                if($kIsWeb) {
-                  GetVideoTracking(JSON.stringify(postMap))
-               }else {
-                  GetVideoTracking.postMessage(JSON.stringify(postMap)) 
-              }
-             });
-        
-        node.addEventListener('play', ()=> {
+                if ($kIsWeb) {
+                    GetVideoTracking(JSON.stringify(postMap))
+                } else {
+                    GetVideoTracking.postMessage(JSON.stringify(postMap))
+                }
+            });
+
+            const buttonContainer = document.createElement('div');
+            textAlignAttr.add(buttonContainer, 'center');
+            marginTopAttr.add(buttonContainer, '8px');
+
+            const markAsReadButton = document.createElement('button');
+            markAsReadButton.innerText = 'Mark as Read';
+            paddingAttr.add(markAsReadButton, '8px 12px');
+            borderAttr.add(markAsReadButton, 'none');
+            BackgroundColorAttributor.add(markAsReadButton, 'green')
+            ColorAttributor.add(markAsReadButton, 'white');
+            borderRadiusAttr.add(markAsReadButton, '4px');
+            CursorAttributor.add(markAsReadButton, 'pointer');
+
+
+            markAsReadButton.addEventListener('click', () => {
+
+                video.currentTime = video.duration;
+                const currentTime = video.duration * 1000;
+                const duration = video.duration * 1000;
+                const progress = (currentTime / duration) * 100;
+                var postMap = {};
+                postMap['totalDuration'] = duration;
+                postMap['currentPosition'] = currentTime;
+                postMap['videoUrl'] = value.url;
+                if ($kIsWeb) {
+                    GetVideoTracking(JSON.stringify(postMap))
+                } else {
+                    GetVideoTracking.postMessage(JSON.stringify(postMap))
+                }
+
+            });
+
+            buttonContainer.appendChild(markAsReadButton);
+            video.appendChild(source);
+            node.appendChild(video);
+            node.appendChild(buttonContainer);
+
+        }
+        else if (value.url.includes('youtube')) {
+           let youtubePlayer;
+            console.log(`\${value.url}`);
+            const iframe = document.createElement('iframe');
+            iframe.setAttribute('id', 'youtubeIframe');
+            iframe.setAttribute('src', `\${value.url}?enablejsapi=1`);
+            iframe.setAttribute('width', value.width || '560');
+            iframe.setAttribute('height', value.height || '315');
+            iframe.setAttribute('frameborder', '0');
+            iframe.setAttribute(
+                'allow',
+                'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+            );
+            iframe.setAttribute('allowfullscreen', true);
+
+            // Create the button
+            const button = document.createElement('button');
+            button.innerText = 'Mark as Watched';
+            button.style.marginTop = '10px';
+            button.style.padding = '5px 10px';
+            button.style.backgroundColor = '#007BFF';
+            button.style.color = '#fff';
+            button.style.border = 'none';
+            button.style.cursor = 'pointer';
+            button.style.borderRadius = '5px';
+
+            const extractYoutubeId = (url) => {
+                const regex = /(?:https?:\\/\\/)?(?:www\\.)?(?:youtube\\.com\\/(?: [^\\/\\n\\s]+\\/\\S +\\/|(?:v|embed|e)\\/ |\\S *? [?&]v =) | youtu\\.be\\/)([a-zA-Z0-9_-]{11})/;
+                const match = url.match(regex);
+                return match ? match[1] : null;
+            };
+
+             
+            const trackProgress = (player, iframe) => {
+                const duration = player.getDuration();
+                const videoUrl = iframe.getAttribute('src');
+                const trackInterval = setInterval(() => {
+                    if (player.getPlayerState() === YT.PlayerState.PLAYING) {
+                        const currentTime = player.getCurrentTime();
+                        var postMap = {};
+                        postMap['totalDuration'] = duration * 1000;
+                        postMap['currentPosition'] = currentTime * 1000;
+                        postMap['videoUrl'] = videoUrl;
+                        const progress = (currentTime / duration) * 100;
+                        if ($kIsWeb) {
+                            GetVideoTracking(JSON.stringify(postMap));
+                            //   GetVideoTracking(progress.toFixed(2));
+                        } else {
+                            GetVideoTracking.postMessage(JSON.stringify(postMap))
+                            // GetVideoTracking.postMessage(progress.toFixed(2));
+                        }
+                    } else {
+                        clearInterval(trackInterval);
+                    }
+                }, 1000);
+            };
+
+
+            const addYoutubeTracking = (iframe1, linkUrl) => {
+                //  const linkUrl = value.url
+                const videoId = extractYoutubeId(linkUrl);
+                console.log(`\${linkUrl}`);
+                 youtubePlayer = new YT.Player(iframe1.getAttribute('id'), {
+                    events: {
+                        'onReady': (event) => onPlayerReady(event, iframe1),
+                        'onStateChange': (event) => onPlayerStateChange(event, iframe1)
+                    }
                 });
+            };
 
-        node.addEventListener('pause', () => {
-         if($kIsWeb){
-         } else {
-         }
-         });
+            const onPlayerReady = (event, iframe2) => {
+                const key = iframe2.getAttribute('src');
+                console.log(key);
+                if (videoMap.hasOwnProperty(key)) {
+                    console.log('This is something that happen');
+                    const savedPosition = videoMap[key] * 0.001;
+                    event.target.seekTo(parseFloat(savedPosition), true); //Resume playback
+                }
+                console.log('Testing the Youtube videos when ready for playing or resumption');
+            };
 
-          node.addEventListener('ended', () => {
-         if($kIsWeb){
-         } else {
-         }
-         });
-                node.appendChild(source);
-                return node;
-               }
+            const onPlayerStateChange = (event, iframe) => {
+                if (event.data == YT.PlayerState.PLAYING) {
+                    console.log('video is playing');
+                    trackProgress(event.target, iframe);
+                } else if (event.data == YT.PlayerState.ENDED) {
+                    console.log('Video has ended.');
+                }
+            };
 
-               static value(node) {
-               let source = node.querySelector('source');
+        // Button click handler with iframe passed as an argument
+        button.addEventListener('click', () => handleButtonClick(iframe));        
+         function handleButtonClick(iframe) {
+          if(youtubePlayer){
+            youtubePlayer.seekTo(youtubePlayer.getDuration(), true);
+            const currentTime = youtubePlayer.getDuration();
+            var postMap = {};
+            postMap['totalDuration'] = currentTime * 1000;
+            postMap['currentPosition'] = currentTime * 1000;
+            postMap['videoUrl'] = iframe.getAttribute('src');
+            if($kIsWeb){
+              GetVideoTracking(JSON.stringify(postMap));
+            } else {
+              GetVideoTracking.postMessage(JSON.stringify(postMap));
+            }
+          }
+      }
+            iframe.addEventListener('load', () => {
+                addYoutubeTracking(iframe, value.url);
+            });
+            node.appendChild(iframe);
+            node.appendChild(button);
+        }
+        return node;
+      }
 
-                return {
-                 width: node.getAttribute('width'),
-                 height: node.getAttribute('height'),
-                 url: source ? source.getAttribute('src') : '',
-                };
-               }
-              }
-              VideoBlot.blotName = 'video';
-              VideoBlot.tagName = 'video';
-              Quill.register(VideoBlot);  
+      static value(node) {
+        let source = node.querySelector('source');
+        let video = node.querySelector('video')
+        let iframe = node.querySelector('iframe');
+        if (source != null) {
+            return {
+                width: video.getAttribute('width'),
+                height: video.getAttribute('height'),
+                url: source ? source.getAttribute('src') : '',
+            };
+        } else {
+            return {
+                url: iframe ? iframe.getAttribute('src') : '',
+                width: iframe ? iframe.getAttribute('width') : '560',
+                height: iframe ? iframe.getAttribute('height') : '315',
+            };
+        }
+      }
+    }
+         VideoBlot.blotName = 'div';
+         VideoBlot.tagName = 'div';
+         Quill.register(VideoBlot);         
+
 
               
-              let Block = Quill.import('blots/block');
+              //  let Block = Quill.import('blots/block');
 
-              class Division extends Block {
-               static tagName = 'div';
-               static blotName = 'division';
-              }
-              Quill.register(Division); 
+              // class Division extends Block {
+              //  static tagName = 'div';
+              //  static blotName = 'division';
+              // }
+              // Quill.register(Division); 
 
 
               let Embed = Quill.import('blots/embed');
@@ -1435,7 +1541,6 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
               }
             }
     
-           
             function getHtmlText() {
               return quilleditor.root.innerHTML;
             }
@@ -1507,7 +1612,10 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
     try {
            if($kIsWeb) {
               quilleditor.enable(false);
-            quilleditor.clipboard.dangerouslyPasteHTML(htmlString); 
+              console.log('Testing the web rendering of this code');
+              const moddifiedHtml = await wrapMediaWithDiv(htmlString);
+              console.log(`\${moddifiedHtml}`);
+            quilleditor.clipboard.dangerouslyPasteHTML(moddifiedHtml); 
            } else {
 
           const modifiedHtml = await replaceVideoWithThumbnail(htmlString);
@@ -1619,33 +1727,63 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
             //const  = new Parchment.StyleAttributor('playButtonSize','font-size', {scope: Parchment.Scope.INLINE});
             
            
-
              const PositionAttributor = new Parchment.StyleAttributor('position','position');
              const DisplayAttributor = new Parchment.StyleAttributor('display','display');
-            // const TransformAttributor = Quill.import('attributors/style/transform');
-            // const FontSizeAttributor = Quill.import('attributors/style/font-size');
              const ColorAttributor = new Parchment.StyleAttributor('color','color');
              const BackgroundColorAttributor = new Parchment.StyleAttributor('background-color','background-color');
-            // const PaddingAttributor = Quill.import('attributors/style/padding');
-            // const BorderRadiusAttributor = Quill.import('attributors/style/border-radius');
              const CursorAttributor = new Parchment.StyleAttributor('cursor','cursor');
              const TopAttributor = new Parchment.StyleAttributor('top','top');
              const HeightAttributor = new Parchment.StyleAttributor('height','height');
              const WidthAttributor = new Parchment.StyleAttributor('width','width');
              const RightAttributor = new Parchment.StyleAttributor('right','right');
              const LeftAttributor = new Parchment.StyleAttributor('left','left');
+             const textAlignAttr = new Parchment.StyleAttributor('textAlign','textAlign');
+             const marginTopAttr = new Parchment.StyleAttributor('marginTop', 'marginTop');
+             const paddingAttr = new Parchment.StyleAttributor('padding', 'padding');
+             const borderAttr = new Parchment.StyleAttributor('border', 'border');
+             const borderRadiusAttr =  new Parchment.StyleAttributor('borderRadius', 'borderRadius');
+
 
 
              Quill.register(PositionAttributor, true);
              Quill.register(DisplayAttributor, true);
-            // Quill.register(TransformAttributor, true);
-            // Quill.register(FontSizeAttributor, true);
              Quill.register(ColorAttributor, true);
              Quill.register(BackgroundColorAttributor, true);
-            // Quill.register(PaddingAttributor, true);
-            // Quill.register(BorderRadiusAttributor, true);
-             Quill.register( CursorAttributor, true);
+             Quill.register(CursorAttributor, true);
+             Quill.register(TopAttributor, true);
+             Quill.register(HeightAttributor, true);
+             Quill.register(WidthAttributor, true);
+             Quill.register(RightAttributor, true);
+             Quill.register(LeftAttributor, true);
+             Quill.register(textAlignAttr, true);  
+             Quill.register(marginTopAttr, true);            
+             Quill.register(paddingAttr, true);
+             Quill.register(borderAttr, true);
+             Quill.register(borderRadiusAttr, true);
             
+            
+
+            function wrapMediaWithDiv(htmlContent) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+             const mediaElements = tempDiv.querySelectorAll('video, iframe');
+
+              mediaElements.forEach((media) => {
+            // Create a div element
+            const wrapperDiv = document.createElement('div');
+      
+
+          // Insert the div before the media element
+           media.parentNode.insertBefore(wrapperDiv, media);
+
+          // Move the media element inside the div
+           wrapperDiv.appendChild(media);
+         });
+           return tempDiv.innerHTML; //return the modifies HTML
+            }
+
+
+
 
             ///Generate the video List and convert it to a container with the thumbnail
               async function replaceVideoWithThumbnail(htmlContent) {
