@@ -1305,10 +1305,10 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
             // Create the button
             const button = document.createElement('button');
             button.setAttribute('contenteditable', false);
-            button.innerText = 'Mark as Watched';
+            button.innerText = '✅ Mark as Read';
             button.style.marginTop = '10px';
             button.style.padding = '5px 10px';
-            button.style.backgroundColor = '#007BFF';
+            button.style.backgroundColor = 'green';
             button.style.color = '#fff';
             button.style.border = 'none';
             button.style.cursor = 'pointer';
