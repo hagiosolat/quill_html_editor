@@ -1110,46 +1110,53 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                
              class ImageBlot extends ImageEmbed {
              static create(value) {
-              let node = super.create(value);       
+              let node = super.create(value);   
               PositionAttributor.add(node, 'relative');
+              
               
               let img = document.createElement('img');
                  img.setAttribute('src',value);
-
+                 img.setAttribute('contenteditable', false); 
+                  node.appendChild(img);  
+                 
                   if(value.includes('data:image') || value.includes('youtube')){
                   console.log(`This is the url: \${value}`);
+
                     let container = document.createElement('div');
-                   container.classList.add('button-wrapper');
+                    PositionAttributor.add(container,'absolute');
+                    DisplayAttributor.add(container,'flex');
+                    justifyContentAttr.add(container,'center');
+                    TopAttributor.add(container,'50%');
+                    LeftAttributor.add(container, '35%');
+                    //flexDirctionAttr.add(container, 'row');
+                    alignItemsAttr.add(container, 'end');
+                    gapAttribute.add(container,'10px');
+                    container.classList.add('button-wrapper');
 
                    let  url = node.getAttribute('alt');
-
-                 let playButton = document.createElement('button');                
+                 let playButton = document.createElement('button');  
+                 playButton.setAttribute('contenteditable', false);              
                  playButton.classList.add('playButton');
-                 ColorAttributor.add(playButton,'red');
-                 PositionAttributor.add(playButton,'absolute');
-                 playButton.textContent = 'Play Now';
+                 paddingAttr.add(playButton, '8px 12px');
+                 ColorAttributor.add(playButton,'white');
+                 borderAttr.add(playButton, 'none');
+                 playButton.innerText = '▶';
+                //fontAttribute.add(playButton,'18px');
                  TopAttributor.add(playButton,'150px');
-                 HeightAttributor.add(playButton, '50px');
-                 BackgroundColorAttributor.add(playButton,'blue')
-                 WidthAttributor.add(playButton, '50px');
+                 BackgroundColorAttributor.add(playButton,'red')
                  RightAttributor.add(playButton, '200px');
-                 LeftAttributor.add(playButton, '100px') 
 
-
-          // const buttonContainer = document.createElement('div');
-          // textAlignAttr.add(buttonContainer,'center');
-          // marginTopAttr.add(buttonContainer, '8px');
 
            const markAsReadButton = document.createElement('button');
-           PositionAttributor.add(markAsReadButton,'absolute');
-           markAsReadButton.innerText = 'Mark as Read';
+           markAsReadButton.setAttribute('contenteditable', false);
+           markAsReadButton.innerText = '✅ Mark as Read';
            paddingAttr.add(markAsReadButton, '8px 12px');
+          // PositionAttributor.add(markAsReadButton,'absolute');
            borderAttr.add(markAsReadButton, 'none');
-            TopAttributor.add(markAsReadButton,'150px');
+           TopAttributor.add(markAsReadButton,'150px');
            BackgroundColorAttributor.add(markAsReadButton, 'green')
            ColorAttributor.add(markAsReadButton,'white');
            borderRadiusAttr.add(markAsReadButton, '4px');
-          // WidthAttributor.add(markAsReadButton, '50px');
            RightAttributor.add(markAsReadButton, '200px');
            CursorAttributor.add(markAsReadButton, 'pointer');    
 
@@ -1172,11 +1179,12 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                   WatchVideo.postMessage(link);
                 }
               });
-
-                 node.appendChild(markAsReadButton); 
-               node.appendChild(playButton);   
-                  }  
-              node.appendChild(img);        
+                  
+                // playButton.appendChild(icon);
+                 container.appendChild(playButton);
+                 container.appendChild(markAsReadButton);  
+                 node.appendChild(container);                      
+                  }      
               return node;
              }
              static value(node){
@@ -1197,6 +1205,10 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
          class VideoBlot extends BlockEmbed {
          static create(value) {
         let node = super.create(value);
+         DisplayAttributor.add(node, 'flex');
+         alignItemsAttr.add(node, 'start');
+         flexDirctionAttr.add(node, 'column');
+     // marginbotAttr.add(node, '10%');
 
         if (value.url.includes('.mp4')) {
             let video = document.createElement('video');
@@ -1237,11 +1249,12 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
             });
 
             const buttonContainer = document.createElement('div');
+            buttonContainer.setAttribute('contenteditable', false);
             textAlignAttr.add(buttonContainer, 'center');
             marginTopAttr.add(buttonContainer, '8px');
 
             const markAsReadButton = document.createElement('button');
-            markAsReadButton.innerText = 'Mark as Read';
+            markAsReadButton.innerText = '✅ Mark as Read';
             paddingAttr.add(markAsReadButton, '8px 12px');
             borderAttr.add(markAsReadButton, 'none');
             BackgroundColorAttributor.add(markAsReadButton, 'green')
@@ -1291,6 +1304,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
 
             // Create the button
             const button = document.createElement('button');
+            button.setAttribute('contenteditable', false);
             button.innerText = 'Mark as Watched';
             button.style.marginTop = '10px';
             button.style.padding = '5px 10px';
@@ -1736,13 +1750,18 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
              const HeightAttributor = new Parchment.StyleAttributor('height','height');
              const WidthAttributor = new Parchment.StyleAttributor('width','width');
              const RightAttributor = new Parchment.StyleAttributor('right','right');
+             const gapAttribute = new Parchment.StyleAttributor('gap','gap');
              const LeftAttributor = new Parchment.StyleAttributor('left','left');
              const textAlignAttr = new Parchment.StyleAttributor('textAlign','textAlign');
-             const marginTopAttr = new Parchment.StyleAttributor('marginTop', 'marginTop');
+             const marginTopAttr = new Parchment.StyleAttributor('margin-top', 'margin-top');
              const paddingAttr = new Parchment.StyleAttributor('padding', 'padding');
              const borderAttr = new Parchment.StyleAttributor('border', 'border');
              const borderRadiusAttr =  new Parchment.StyleAttributor('borderRadius', 'borderRadius');
-
+             const alignItemsAttr = new Parchment.StyleAttributor('align-items', 'align-items');
+             const marginbotAttr = new Parchment.StyleAttributor('margin-bottom', 'margin-bottom');
+             const flexDirctionAttr = new Parchment.StyleAttributor('flex-direction', 'flex-direction');
+             const justifyContentAttr = new Parchment.StyleAttributor('justify-content', 'justify-content');
+             const fontAttribute = new Parchment.StyleAttributor('font-size', 'font-size');
 
 
              Quill.register(PositionAttributor, true);
@@ -1760,8 +1779,12 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
              Quill.register(paddingAttr, true);
              Quill.register(borderAttr, true);
              Quill.register(borderRadiusAttr, true);
-            
-            
+             Quill.register(alignItemsAttr, true);
+             Quill.register(marginbotAttr, true);
+             Quill.register(flexDirctionAttr, true);
+             Quill.register(justifyContentAttr, true);
+             Quill.register(gapAttribute, true);
+             Quill.register(fontAttribute,true);
 
             function wrapMediaWithDiv(htmlContent) {
             const tempDiv = document.createElement('div');
