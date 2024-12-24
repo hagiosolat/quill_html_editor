@@ -678,7 +678,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             });
           }
         },
-        lastScrollPosition: totalProgressMap['scrollPosition'],
+        lastScrollPosition: totalProgressMap['scrollPosition'] ?? 0.0,
         videosDuration: //TESTING SCENARIO FOR VIDEO RESUMPTION ON THE WEB SIDE
             const {
           'https://www.youtube.com/embed/dQw4w9WgXcQ?enablejsapi=1':
@@ -835,7 +835,7 @@ const String htmlContent = '''
 </video>
 <h2>Another Random Image</h2>
 <p><img
- src="https://www.shutterstock.com/shutterstock/photos/2056485080/display_1500/stock-vector-address-and-navigation-bar-icon-business-concept-search-www-http-pictogram-d-concept-2056485080.jpg" alt="Flower Image"></p>
+ src="https://www.shutterstock.com/shutterstock/photos/2056485080/display_1500/stock-vector-address-and-navigation-bar-icon-business-concept-search-www-http-pictogram-d-concept-2056485080.jpg" alt="Flower Image"/></p>
   </article>
 </body>
 </html>

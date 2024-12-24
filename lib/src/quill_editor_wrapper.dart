@@ -178,6 +178,7 @@ class QuillHtmlEditor extends StatefulWidget {
   /// [videosDuration] to get the duration of the saved videos
   final Map<String, dynamic>? videosDuration;
 
+  /// [watchedVideo] to get the duration of the saved videos
   final Function(String)? watchedVideo;
 
   @override
@@ -270,7 +271,6 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                 widget.controller.enableEditor(isEnabled);
                 if (widget.text != null) {
                   _setHtmlTextToEditor(htmlText: widget.text!);
-
                   _webviewController.callJsMethod('setScrollPosition',
                       [widget.lastScrollPosition?.toInt()]);
                   _setVideoPosition(videos: widget.videosDuration ?? {});
@@ -1658,25 +1658,19 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
             }            
 
        async function setHtmlText(htmlString) {
-    console.log('*****&&&****&&&*****&&&*****&&&&&******&&&******&&&&&*****&&&&****&&&&****');
     try {
            if($kIsWeb) {
               quilleditor.enable(false);
               console.log('Testing the web rendering of this code');
               const moddifiedHtml = await wrapMediaWithDiv(htmlString);
-              console.log(`\${moddifiedHtml}`);
             quilleditor.clipboard.dangerouslyPasteHTML(moddifiedHtml); 
+            return '';
            } else {
-
           const modifiedHtml = await replaceVideoWithThumbnail(htmlString);
-
-           //console.log(`\${modifiedHtml}`);
-           console.log('*****&&&****&&&*****&&&*****&&&&&******&&&******&&&&&*****&&&&****&&&&****');
           quilleditor.enable(false);
           quilleditor.clipboard.dangerouslyPasteHTML(modifiedHtml); 
-           }
-          
-          
+           return '';
+           }          
     } catch (e) {
         console.log('setHtmlText', e);
     }
@@ -1976,6 +1970,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
              if(savedScrollPosition !== null) {
              window.scrollTo(0, parseInt(savedScrollPosition, 10));
              }
+             return '';
             }
             
             let videoMap;
