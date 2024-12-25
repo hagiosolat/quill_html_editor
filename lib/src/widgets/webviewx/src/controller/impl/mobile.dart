@@ -119,29 +119,32 @@ class WebViewXController extends ChangeNotifier
     String name,
     List<dynamic> params,
   ) async {
-    // This basically will transform a "raw" call (evaluateJavascript)
-    // into a little bit more "typed" call, that is - calling a method.
-    final result = await connector.runJavaScriptReturningResult(
-      HtmlUtils.buildJsFunction(name, params),
-    );
+    if (Platform.isIOS) {
+      await connector.runJavaScript(HtmlUtils.buildJsFunction(name, params));
+    } else {
+      // This basically will transform a "raw" call (evaluateJavascript)
+      // into a little bit more "typed" call, that is - calling a method.
+      final result = await connector.runJavaScriptReturningResult(
+        HtmlUtils.buildJsFunction(name, params),
+      );
 
-    if (result is String) {
-      // (MOBILE ONLY) Unquotes response if necessary
-      //
-      // The web works fine because it is already into its native environment
-      // but on mobile we need to parse the result
-      if (Platform.isAndroid) {
-        // On Android `result` will be JSON, so we decode it
-        return json.decode(result);
-      } else {
-        /// TODO: make sure this works on iOS
-        // In the iOS version responses from JS to Dart come wrapped in single quotes (')
-        // Note that the supported types are more limited because of connector.evaluateJavascript
-        return HtmlUtils.unQuoteJsResponseIfNeeded(result);
+      if (result is String) {
+        // (MOBILE ONLY) Unquotes response if necessary
+        //
+        // The web works fine because it is already into its native environment
+        // but on mobile we need to parse the result
+        if (Platform.isAndroid) {
+          // On Android `result` will be JSON, so we decode it
+          return json.decode(result);
+        } else {
+          /// TODO: make sure this works on iOS
+          // In the iOS version responses from JS to Dart come wrapped in single quotes (')
+          // Note that the supported types are more limited because of connector.evaluateJavascript
+          return HtmlUtils.unQuoteJsResponseIfNeeded(result);
+        }
       }
+      return result;
     }
-
-    return result;
   }
 
   /// This function allows you to evaluate 'raw' javascript (e.g: 2+2)
