@@ -121,6 +121,7 @@ class WebViewXController extends ChangeNotifier
   ) async {
 
     final jsCode = HtmlUtils.buildJsFunction(name, params);
+    print("jscode: $jsCode");
     try {
       // This basically will transform a "raw" call (evaluateJavascript)
       // into a little bit more "typed" call, that is - calling a method.

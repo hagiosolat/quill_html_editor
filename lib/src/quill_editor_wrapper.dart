@@ -1150,7 +1150,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                 //  TopAttributor.add(playButton,'50%');
                 //  LeftAttributor.add(playButton, '50%');
                 // transformAttr.add(playButton, 'translate(-50%, -50%)'); 
-                DisplayAttributor.add(playButton,'flex');
+                DisplayAttributor.add(playButton,'block');
                 
                  BackgroundColorAttributor.add(playButton,'red');  
                  
@@ -1168,14 +1168,14 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                 //  playButton.innerText = '▶';
                  fontAttribute.add(playButton,'100px');
                  textAlignAttr.add(playButton,'center'); 
-                // paddingAttr.add(playButton, '10px 20px');
+                paddingAttr.add(playButton, '10px 20px');
                 
 
                 let triangle = document.createElement('div');
                  HeightAttributor.add(triangle,'0px');
                  WidthAttributor.add(triangle,'0px');
                  borderBottomAttr.add(triangle, '25px  solid transparent');
-                 borderLeftAttr.add(triangle, '45px solid white');
+                 borderLeftAttr.add(triangle, '50px solid white');
                  borderTopAttr.add(triangle, '25px  solid transparent');
                  marginLeftAttr.add(triangle, '9px');
                  //BackgroundColorAttributor.add(triangle,'white');
@@ -1898,14 +1898,19 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                 for(let video of videos){
                   const width = video.getAttribute('width');
                   const height = video.getAttribute('height');
-                 const videoSrc = video.getAttribute('src') || video.querySelector('source').getAttribute('src');
+                  let videoSrc = video.getAttribute('src') || video.querySelector('source').getAttribute('src');
+                  if (videoSrc.startsWith('http://')) {
+                  videoSrc = videoSrc.replace('http://', 'https://');
+                  }
+                  
+                  
                  if(videoSrc){
                     try {
-            //               //Create an <img> tag with the thumbnail URL
+                          //Create an <img> tag with the thumbnail URL
                                 console.log(`This is the width of the video \${width}`);
                                 console.log(`This is the height of the video \${height}`);
 
-                                //const thumbnailUrl = await generateThumbnail(videoSrc);
+                              //  const thumbnailUrl = await generateThumbnail(videoSrc);
                               const thumbnailUrl = "https://hips.hearstapps.com/hmg-prod/images/bright-forget-me-nots-royalty-free-image-1677788394.jpg" + ".mp4"
 
                               const thumbnailWithButton = insertThumbnailWithPlayButton(thumbnailUrl, videoSrc, width, height);
@@ -1931,6 +1936,19 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                      img.setAttribute('height', height);
                    return img;                
               }
+              
+              function convertToHttps(url) {
+            try {
+              const parsedUrl = new URL(url);
+              if (parsedUrl.protocol === 'http:') {
+               parsedUrl.protocol = 'https:';
+            }
+          return parsedUrl.toString();
+        } catch (error) {
+            console.error("Invalid URL:", error.message);
+          return null;
+       }
+}
    
       function getYouTubeThumbnail(url) {
 
@@ -1959,7 +1977,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                 return new Promise((resolve, reject) => {
                 const video = document.createElement('video');
                 video.src = videoUrl;
-                video.crossOrigin = 'anonymous';
+                video.crossOrigin = '';
                 video.addEventListener('loadeddata', ()=> {
                 const canvas = document.createElement('canvas');
                 canvas.width = video.videoWidth;
