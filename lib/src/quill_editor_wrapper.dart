@@ -1116,16 +1116,19 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
              // DisplayAttributor.add(node,'flex'); 
               //flexDirctionAttr.add(node, 'column');
 
-              
-              
-              let img = document.createElement('img');
-                 img.setAttribute('src',value);
+              // Regular expression to remove `.mp4` at the end
+              const updatedValue = value.replace(/\.mp4\$/, '');
+
+                 let img = document.createElement('img');
+                 img.setAttribute('src',updatedValue);
                  img.setAttribute('contenteditable', false); 
                  img.setAttribute('display', 'block');
                  objectFitAttr.add(img,'cover');
                   node.appendChild(img);  
+                  
+                 //if(value.includes('data:image') || value.includes('youtube')){
                  
-                  if(value.includes('data:image') || value.includes('youtube')){
+                  if(value.includes('.mp4') || value.includes('youtube') ){
                   console.log(`This is the url: \${value}`);
 
                      let container = document.createElement('div');
@@ -1147,11 +1150,15 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                 //  TopAttributor.add(playButton,'50%');
                 //  LeftAttributor.add(playButton, '50%');
                 // transformAttr.add(playButton, 'translate(-50%, -50%)'); 
+                DisplayAttributor.add(playButton,'flex');
+                
                  BackgroundColorAttributor.add(playButton,'red');  
-                 borderRadiusAttr.add(playButton, '50%');
+                 
                  WidthAttributor.add(playButton,'100px');
                  HeightAttributor.add(playButton,'100px');
-                 DisplayAttributor.add(playButton,'flex');
+                 
+                 borderRadiusAttr.add(playButton, '50%');
+                 
                  justifyContentAttr.add(playButton,'center');
                  alignItemsAttr.add(playButton,'center');      
                  //ColorAttributor.add(playButton,'white'); 
@@ -1898,7 +1905,8 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                                 console.log(`This is the width of the video \${width}`);
                                 console.log(`This is the height of the video \${height}`);
 
-                                const thumbnailUrl = await generateThumbnail(videoSrc);
+                                //const thumbnailUrl = await generateThumbnail(videoSrc);
+                              const thumbnailUrl = "https://hips.hearstapps.com/hmg-prod/images/bright-forget-me-nots-royalty-free-image-1677788394.jpg" + ".mp4"
 
                               const thumbnailWithButton = insertThumbnailWithPlayButton(thumbnailUrl, videoSrc, width, height);
 

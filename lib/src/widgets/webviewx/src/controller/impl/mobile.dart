@@ -119,29 +119,54 @@ class WebViewXController extends ChangeNotifier
     String name,
     List<dynamic> params,
   ) async {
-    // This basically will transform a "raw" call (evaluateJavascript)
-    // into a little bit more "typed" call, that is - calling a method.
-    final result = await connector.runJavaScriptReturningResult(
-      HtmlUtils.buildJsFunction(name, params),
-    );
 
-    if (result is String) {
-      // (MOBILE ONLY) Unquotes response if necessary
-      //
-      // The web works fine because it is already into its native environment
-      // but on mobile we need to parse the result
-      if (Platform.isAndroid) {
-        // On Android `result` will be JSON, so we decode it
-        return json.decode(result);
+    final jsCode = HtmlUtils.buildJsFunction(name, params);
+    try {
+      // This basically will transform a "raw" call (evaluateJavascript)
+      // into a little bit more "typed" call, that is - calling a method.
+      final result = await connector.runJavaScriptReturningResult(
+        HtmlUtils.buildJsFunction(name, params),
+      );
+
+      if (result is String) {
+        print("result: $result");
+        if(result.isEmpty){
+          print("result: Empty");
+          var result = await connector.runJavaScript(jsCode);
+          return result;
+
+        }
+        // (MOBILE ONLY) Unquotes response if necessary
+        //
+        // The web works fine because it is already into its native environment
+        // but on mobile we need to parse the result
+        if (Platform.isAndroid) {
+          // On Android `result` will be JSON, so we decode it
+          return json.decode(result);
+        } else {
+          print("contains null value");
+          /// TODO: make sure this works on iOS
+          // In the iOS version responses from JS to Dart come wrapped in single quotes (')
+          // Note that the supported types are more limited because of connector.evaluateJavascript
+          var result = await connector.runJavaScript(jsCode);
+          return result;
+        }
+      }
+
+      return result;
+    }
+    catch(e){
+      // Handle cases where result is null or JavaScript fails
+      if (true) {
+        // Use runJavaScript for void JS functions
+        print(e.toString());
+        var result = await connector.runJavaScript(jsCode);
+        return result;
       } else {
-        /// TODO: make sure this works on iOS
-        // In the iOS version responses from JS to Dart come wrapped in single quotes (')
-        // Note that the supported types are more limited because of connector.evaluateJavascript
-        return HtmlUtils.unQuoteJsResponseIfNeeded(result);
+        // Rethrow other exceptions
+        rethrow;
       }
     }
-
-    return result;
   }
 
   /// This function allows you to evaluate 'raw' javascript (e.g: 2+2)

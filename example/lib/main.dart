@@ -258,7 +258,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     controller.onEditorLoaded(() {
       debugPrint('Editor Loaded :)');
     });
-    controller.setText(htmlContent);
+    try {
+      controller.setText(htmlContent);
+    } catch(e){
+      print(e.toString());
+    }
 
     /// From here we can load the saved percentage of
     /// the previous saved article
@@ -820,19 +824,19 @@ const String htmlContent = '''
     <p><img src="https://hips.hearstapps.com/hmg-prod/images/bright-forget-me-nots-royalty-free-image-1677788394.jpg" alt="Flowers image"></p>
     <h2>IFrame Example</h2>
     <iframe width="520" height="300" src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe>
-    </ul>
+    
     <h2>Video Example</h2>
-    <video width="320" height="240" controls>
-  <source src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-  <figcaption> Hello World</figcaption>
-</video>
-<h2>Another Video Example</h2>
    <video width="320" height="240" controls>
-  <source src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" type="video/mp4">
+  <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4" type="video/mp4">
   Your browser does not support the video tag.
   <figcaption> Hello World</figcaption>
-</video>
+  </video>
+  <h2>Another Video Example</h2>
+   <video width="320" height="240" controls>
+  <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+  <figcaption> Hello World</figcaption>
+  </video> 
 <h2>Another Random Image</h2>
 <p><img
  src="https://www.shutterstock.com/shutterstock/photos/2056485080/display_1500/stock-vector-address-and-navigation-bar-icon-business-concept-search-www-http-pictogram-d-concept-2056485080.jpg" alt="Flower Image"></p>
