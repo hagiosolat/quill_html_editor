@@ -1910,6 +1910,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                                 console.log(`This is the width of the video \${width}`);
                                 console.log(`This is the height of the video \${height}`);
 
+
                               //  const thumbnailUrl = await generateThumbnail(videoSrc);
                               const thumbnailUrl = "https://hips.hearstapps.com/hmg-prod/images/bright-forget-me-nots-royalty-free-image-1677788394.jpg" + ".mp4"
 
