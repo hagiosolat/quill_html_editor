@@ -59,6 +59,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   //TODO: Testing use case for the total duration of the videos
   final int totalDuration = 60070 + 653803 + 213000;
   ScrollController scrollController = ScrollController();
+  ScrollController mobileScrollController = ScrollController();
   // variable to hold videoProgress
   double _videoProgress = 0.0;
   //Variable to hold the total Progress.[videos and article Progress]
@@ -75,6 +76,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   //variable to hold the progress of both the videos and
   //the article progress
   Map<String, dynamic> totalProgressMap = {};
+
+  double _currentPosition = 0.0; // currentPosition
+  double _maxPosition = 0.0; // max Position
 
   void _addComment(String text) {
     final comment = Comment(text: text);
@@ -94,6 +98,19 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           (totalDuration + scrollength.toDouble());
     });
   }
+
+
+  // Listen to changes in the scroll position
+
+// This method will be called on every scroll event
+void _onScroll() {
+  setState(() {
+    _currentPosition = mobileScrollController.position.pixels;  // current position
+    _maxPosition = mobileScrollController.position.maxScrollExtent;
+
+    _progress = (_currentPosition / _maxPosition).abs();// max position
+  });
+}
 
   void _updateTotalProgress() {
     if (videoProgressMap.isNotEmpty) {
@@ -252,6 +269,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void initState() {
     //controller.setScrollPosition(scrollPosition)
+
+    mobileScrollController.addListener(_onScroll);
+
     controller.onTextChanged((text) {
       debugPrint('listening to $text');
     });
@@ -399,7 +419,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                     progress: _progress.toDouble(),
                     color: Colors.lightBlue,
                   ),
-                  Expanded(flex: 10, child: editor()),
+                  Expanded(flex: 10, child: SingleChildScrollView(controller: mobileScrollController, child: editor())),
                 ],
               ),
         bottomNavigationBar: kIsWeb
@@ -588,7 +608,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         controller: controller,
         isEnabled: true,
         ensureVisible: false,
-        minHeight: 500,
+        minHeight: MediaQuery.of(context).size.height,
         autoFocus: false,
         textStyle: _editorTextStyle,
         hintTextStyle: _hintTextStyle,
@@ -666,7 +686,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             // print(
             //     'scrollTop is ${p0.scrollTop}, currentPosition ${p0.currentPosition}');
             setState(() {
-              _progress = p0.currentPosition ?? 0.0;
+             // _progress = p0.currentPosition ?? 0.0;
               scrollength = p0.maxScroll ?? 0.0;
               totalProgressMap['scrollPosition'] = p0.scrollTop;
               _getTotalProgress();
@@ -675,7 +695,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             // print(
             //     'scrollTop is ${p0.scrollTop}, currentPosition ${p0.currentPosition}');
             setState(() {
-              _progress = p0.currentPosition ?? 0.0;
+              //_progress = p0.currentPosition ?? 0.0;
               scrollength = p0.maxScroll ?? 0.0;
               totalProgressMap['scrollPosition'] = p0.scrollTop;
               _getTotalProgress();

@@ -211,6 +211,8 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
     _encodedStyle = Uri.encodeFull(_fontFamily);
     isEnabled = widget.isEnabled;
     _currentHeight = widget.minHeight;
+    print(_currentHeight);
+
 
     super.initState();
   }
@@ -231,6 +233,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
           }
           if (snap.connectionState == ConnectionState.done) {
             return LayoutBuilder(builder: (context, constraints) {
+              print(constraints);
               _initialContent = _getQuillPage(width: constraints.maxWidth);
               return _buildEditorView(
                   context: context, width: constraints.maxWidth);
@@ -748,6 +751,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
           padding-top:${widget.padding?.top ?? '0'}px;
           padding-bottom:${widget.padding?.bottom ?? '0'}px;
           min-height:100%;
+          min-width:100%
         
           contenteditable: true !important;
           data-gramm: false !important;
