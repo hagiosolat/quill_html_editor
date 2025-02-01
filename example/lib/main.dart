@@ -1,4 +1,6 @@
 // ignore_for_file: implementation_imports, use_build_context_synchronously
+import 'dart:async';
+
 import 'package:example/mobile_youtube_video.dart';
 import 'package:example/progress_bar.dart';
 import 'package:example/show_web_video.dart';
@@ -56,8 +58,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   final List<Comment> _comments = [];
   final TextEditingController commentController = TextEditingController();
   final QuillEditorController controller = QuillEditorController();
+  StreamController<num> progressController = StreamController();
+  Stream? streamTest;
+
   //TODO: Testing use case for the total duration of the videos
   final int totalDuration = 60070 + 653803 + 213000;
+
   ScrollController scrollController = ScrollController();
   // variable to hold videoProgress
   double _videoProgress = 0.0;
@@ -67,7 +73,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   num _progress = 0.0;
   //variable to hold current scroll
   num scrollength = 0.0;
-  //variable to the video and their last position to be saved
+  //variable to hold the video and their last position to be saved
   //to the backend database
   Map<String, dynamic> controllerMap = {};
   //variable to hold the progress of the videos being played
@@ -84,7 +90,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       selectedTextlength = 0;
     });
   }
-
+// function for total progress
   void _getTotalProgress() {
     /// Get the scroll Length
     /// Get the total Duration
@@ -94,7 +100,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           (totalDuration + scrollength.toDouble());
     });
   }
-
+//function for video progress
   void _updateTotalProgress() {
     if (videoProgressMap.isNotEmpty) {
       _videoProgress = (videoProgressMap.values
@@ -260,9 +266,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     });
     try {
       controller.setText(htmlContent);
-    } catch(e){
+    } catch (e) {
       print(e.toString());
     }
+
+    //ENABLE THE STREAM CONTROLLER TO LISTEN FOR DATA UPDATES
+    progressController.stream.listen((event) {
+      setState(() {
+        _progress = event;
+      });
+    });
 
     /// From here we can load the saved percentage of
     /// the previous saved article
@@ -620,6 +633,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           if (kIsWeb) {
           } else {
             setState(() {
+              //TODO: There should be a condition to check if the videoLink is thesame as the one sent
+              //from the firebase; then it will update that particular video
+              //Something like; list of videos coming from backend; where the videolink is thesame with the videos.videourl
+              //Then update the video with the duration
               videoProgressMap[videolink] = 60070;
               totalProgressMap[videolink] = 60070;
               _updateTotalProgress();
@@ -666,18 +683,23 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             // print(
             //     'scrollTop is ${p0.scrollTop}, currentPosition ${p0.currentPosition}');
             setState(() {
-              _progress = p0.currentPosition ?? 0.0;
+              //  _progress = p0.currentPosition ?? 0.0;
               scrollength = p0.maxScroll ?? 0.0;
               totalProgressMap['scrollPosition'] = p0.scrollTop;
+
+              //This is the streamController that will be sending the progress to the backend.
+              progressController.add(p0.currentPosition ?? 0.0);
               _getTotalProgress();
             });
           } else {
             // print(
             //     'scrollTop is ${p0.scrollTop}, currentPosition ${p0.currentPosition}');
             setState(() {
-              _progress = p0.currentPosition ?? 0.0;
+              //  _progress = p0.currentPosition ?? 0.0;
               scrollength = p0.maxScroll ?? 0.0;
               totalProgressMap['scrollPosition'] = p0.scrollTop;
+              //This is the stream that will be sending the progress to the backend.
+              progressController.add(p0.currentPosition ?? 0.0);
               _getTotalProgress();
             });
           }
@@ -827,13 +849,13 @@ const String htmlContent = '''
     
     <h2>Video Example</h2>
    <video width="320" height="240" controls>
-  <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4" type="video/mp4">
+  <source src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4" type="video/mp4">
   Your browser does not support the video tag.
   <figcaption> Hello World</figcaption>
   </video>
   <h2>Another Video Example</h2>
    <video width="320" height="240" controls>
-  <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" type="video/mp4">
+  <source src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" type="video/mp4">
   Your browser does not support the video tag.
   <figcaption> Hello World</figcaption>
   </video> 
