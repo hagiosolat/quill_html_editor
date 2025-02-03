@@ -15,6 +15,7 @@ class ProgressBars extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print(MediaQuery.of(context).size.width * progress);
     return Stack(
       children: [
         Container(

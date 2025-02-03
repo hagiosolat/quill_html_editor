@@ -211,6 +211,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
     _encodedStyle = Uri.encodeFull(_fontFamily);
     isEnabled = widget.isEnabled;
     _currentHeight = widget.minHeight;
+    print(_currentHeight);
 
     super.initState();
   }
@@ -231,6 +232,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
           }
           if (snap.connectionState == ConnectionState.done) {
             return LayoutBuilder(builder: (context, constraints) {
+              print(constraints);
               _initialContent = _getQuillPage(width: constraints.maxWidth);
               return _buildEditorView(
                   context: context, width: constraints.maxWidth);
@@ -748,6 +750,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
           padding-top:${widget.padding?.top ?? '0'}px;
           padding-bottom:${widget.padding?.bottom ?? '0'}px;
           min-height:100%;
+          min-width:100%
         
           contenteditable: true !important;
           data-gramm: false !important;
@@ -1235,7 +1238,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
              let img2 = node.querySelector('img')
              return {
              alt: node.getAttribute('alt'),
-             src:node.getAttribute('src'),
+             src: node.getAttribute('src'),
              };
                }
           }
@@ -1468,10 +1471,129 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
     }
          VideoBlot.blotName = 'div';
          VideoBlot.tagName = 'div';
-         Quill.register(VideoBlot);         
+         Quill.register(VideoBlot);      
 
+ 
+              class VideoThumbnailBlot extends BlockEmbed {
+               static create(value) {
+               // Ensure value is an object and contains 'url'
+                if (!value || !value.url) {
+              throw new Error("Invalid value: 'src' property is required");
+               }
+               let node = super.create(value); // Call the parent class's create method
+                console.log(`\${value.url}`);
+                PositionAttributor.add(node, 'relative');
+                overflowAttr.add(node,'hidden');
 
+                 let img = document.createElement('img');
+                 img.setAttribute('src',value.thumbnail);
+                 img.setAttribute('contenteditable', false); 
+                 img.setAttribute('display', 'block');
+                 objectFitAttr.add(img,'cover');
+                 node.appendChild(img);  
+
+                    let container = document.createElement('div');
+                     PositionAttributor.add(container,'absolute');
+                     TopAttributor.add(container,'50%');
+                     LeftAttributor.add(container, '50%');  
+                     transformAttr.add(container, 'translate(-50%, -50%)');   
+                     DisplayAttributor.add(container,'flex');             
+                     flexDirctionAttr.add(container, 'column');
+                     alignItemsAttr.add(container, 'center');
+                     gapAttribute.add(container,'30px');
+                     container.classList.add('button-wrapper');
+                     justifyContentAttr.add(container,'space-between');  
+                   
+
+                 let  url = node.getAttribute('alt');
+                 let playButton = document.createElement('button');  
+                 playButton.setAttribute('contenteditable', false); 
+                 DisplayAttributor.add(playButton,'block');
+                 BackgroundColorAttributor.add(playButton,'red');  
+                 
+                 WidthAttributor.add(playButton,'100px');
+                 HeightAttributor.add(playButton,'100px');
+                 
+                 borderRadiusAttr.add(playButton, '50%');
+                 
+                 justifyContentAttr.add(playButton,'center');
+                 alignItemsAttr.add(playButton,'center');  
+                  borderAttr.add(playButton, 'none');
+                 verticalAlignsAttr.add(playButton, 'middle');
+                 playButton.classList.add('playButton'); 
+                 fontAttribute.add(playButton,'100px');
+                 textAlignAttr.add(playButton,'center'); 
+                paddingAttr.add(playButton, '10px 20px');
               
+
+                 let triangle = document.createElement('div');
+                 HeightAttributor.add(triangle,'0px');
+                 WidthAttributor.add(triangle,'0px');
+                 borderBottomAttr.add(triangle, '25px  solid transparent');
+                 borderLeftAttr.add(triangle, '50px solid white');
+                 borderTopAttr.add(triangle, '25px  solid transparent');
+                 marginLeftAttr.add(triangle, '9px');
+
+
+
+           const markAsReadButton = document.createElement('button');
+           markAsReadButton.setAttribute('contenteditable', false);
+            PositionAttributor.add(markAsReadButton,'absolute');
+            bottomAttribute.add(markAsReadButton,'20px');
+            LeftAttributor.add(markAsReadButton, '50%');
+           transformAttr.add(markAsReadButton, 'translateX(-50%)');
+           BackgroundColorAttributor.add(markAsReadButton, 'green')
+           paddingAttr.add(markAsReadButton, '8px 10px');
+           ColorAttributor.add(markAsReadButton,'white');
+           borderAttr.add(markAsReadButton, 'none');
+           borderRadiusAttr.add(markAsReadButton, '5px');
+           fontAttribute.add(markAsReadButton,'14px');
+           markAsReadButton.innerText = '✅ Mark as Read';
+
+             CursorAttributor.add(markAsReadButton, 'pointer');  
+
+               playButton.addEventListener('click',()=>{
+                let link = node.getAttribute('alt');
+                 if($kIsWeb){
+                  //  GetVideoUrl(link);
+                  } else {
+                    GetVideoUrl.postMessage(link);
+                  }
+               //  alert(`\${link}`);
+              });
+
+              markAsReadButton.addEventListener('click', ()=> {
+               console.log('Mark As read button pressed');
+               let link = node.getAttribute('alt');
+               if($kIsWeb){
+                //  WatchVideo(link);
+                } else {
+                  WatchVideo.postMessage(link);
+                }
+              });
+
+                 playButton.appendChild(triangle); 
+                 container.appendChild(playButton);
+                 node.appendChild(markAsReadButton);  
+                 node.appendChild(container); 
+
+
+          node.setAttribute('alt', value.url); // Store the URL
+           return node;
+  }
+  // static value(node) {
+  //   return {
+  //     alt: value.url,
+  //     thumbnail: value.src,
+  //     // thumbnail: node.querySelector('img')?.src || '',
+  //   };
+  // }
+}
+ VideoThumbnailBlot.blotName = 'videoThumbnail';
+ VideoThumbnailBlot.tagName = 'div';
+   VideoThumbnailBlot.className= 'videoThumbnail';
+ Quill.register(VideoThumbnailBlot);   
+
               //  let Block = Quill.import('blots/block');
 
               // class Division extends Block {
@@ -1674,16 +1796,12 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
               console.log(`\${moddifiedHtml}`);
             quilleditor.clipboard.dangerouslyPasteHTML(moddifiedHtml); 
            } else {
-
           const modifiedHtml = await replaceVideoWithThumbnail(htmlString);
-
            //console.log(`\${modifiedHtml}`);
            console.log('*****&&&****&&&*****&&&*****&&&&&******&&&******&&&&&*****&&&&****&&&&****');
-          quilleditor.enable(false);
+          quilleditor.enable(true);
           quilleditor.clipboard.dangerouslyPasteHTML(modifiedHtml); 
-           }
-          
-          
+           }    
     } catch (e) {
         console.log('setHtmlText', e);
     }
@@ -1766,7 +1884,17 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
             function embedVideo(videoUrl) {
               var range = quilleditor.getSelection(true);
               if(range) {
-                quilleditor.insertEmbed(range.index, 'video', videoUrl);
+                if($kIsWeb) {
+                  quilleditor.insertEmbed(range.index, 'div', {                 
+                url:videoUrl,
+                }, Quill.sources.USER);
+
+                } else {
+                 quilleditor.insertEmbed(range.index, 'videoThumbnail', {
+                 url: videoUrl,
+                 thumbnail: "https://hips.hearstapps.com/hmg-prod/images/bright-forget-me-nots-royalty-free-image-1677788394.jpg",
+                 }, Quill.sources.USER); 
+                }           
               }
               return '';
             }
