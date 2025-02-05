@@ -1,4 +1,4 @@
-// ignore_for_file: implementation_imports, use_build_context_synchronously
+// ignore_for_file: implementation_imports, use_build_context_synchronously, deprecated_member_use
 import 'dart:async';
 
 import 'package:example/mobile_youtube_video.dart';
@@ -145,6 +145,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             durationRation: (duration) {
               //This will save the percentage of the video
             },
+            enableQull: (isEnable) {
+              if (isEnable) {
+                controller.enableQuillEditor();
+              }
+            },
             videoDuration: (totalDuration) {
               //when the video has been paused on quit.
               // send the position to this point and then save it
@@ -184,6 +189,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                     ///from the pop-up
                     controllerMap[videolink] = currentTime;
                     print(controllerMap[videolink]);
+                  },
+                  enableQuill: (isEnable) {
+                    if (isEnable) {
+                      controller.enableQuillEditor();
+                    }
                   },
                   videoRatio: (videoPercentage) {},
                   currentPosition: (currentTime) {

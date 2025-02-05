@@ -8,12 +8,14 @@ class MobileYoutubeVideoWidget extends StatefulWidget {
       required this.currentPosition,
       required this.durationRation,
       required this.positioning,
+      required this.enableQull,
       super.key});
 
   final String videoUrl;
   final Function(Duration) videoDuration;
   final Function(Duration) currentPosition;
   final Function(double) durationRation;
+  final Function(bool) enableQull;
   final Duration positioning;
 
   @override
@@ -87,6 +89,7 @@ class _MobileYoutubeVideoWidgetState extends State<MobileYoutubeVideoWidget>
                     setState(() {
                       //To save the current Position where the video stopped inside the map
                       widget.videoDuration(_youtubecontroller.value.position);
+                      widget.enableQull(true);
                     });
                     Navigator.pop(context);
                   },

@@ -9,6 +9,7 @@ class VideoWidget extends StatefulWidget {
       required this.currentPosition,
       required this.videoRatio,
       required this.positioning,
+      required this.enableQuill,
       super.key});
 
   final String videoUrl;
@@ -16,6 +17,7 @@ class VideoWidget extends StatefulWidget {
   final Function(double) videoRatio;
   final Function(Duration) currentPosition;
   final Duration positioning;
+  final Function(bool) enableQuill;
 
   @override
   State<VideoWidget> createState() => _WebVideoWidgetState();
@@ -88,8 +90,11 @@ class _WebVideoWidgetState extends State<VideoWidget> {
                 children: [
                   IconButton(
                       onPressed: () {
+                        setState(() {
+                          widget.videoDuration(_videoController.value.position);
+                          widget.enableQuill(true);
+                        });
                         Navigator.pop(context);
-                        widget.videoDuration(_videoController.value.position);
                       },
                       icon: const Icon(Icons.cancel)),
                   AspectRatio(
