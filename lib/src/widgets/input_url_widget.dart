@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:quill_html_editor/src/widgets/webviewx/src/webviewx_plus.dart';
 
 import '../../quill_html_editor.dart';
@@ -22,6 +23,8 @@ class InputUrlWidget extends StatefulWidget {
 
   ///[iconWidget] icon for url picker
   final Widget iconWidget;
+
+
 
   ///[InputUrlWidget] constructor of input url widget to capture, video/hyperlink urls
   const InputUrlWidget(
@@ -53,10 +56,14 @@ class _InputUrlWidgetState extends State<InputUrlWidget> {
   int onDoneLastClicked = 0;
   int onCloseLastClicked = 0;
 
+  ///[_inputFieldTextController] controller to the input text field
+  TextEditingController _inputFieldTextController = TextEditingController();
+
   @override
   void initState() {
     _toolTipKey = GlobalKey<ElTooltipState>(
         debugLabel: widget.controller.hashCode.toString());
+    _inputFieldTextController.clear();
     super.initState();
   }
 
@@ -127,7 +134,9 @@ class _InputUrlWidgetState extends State<InputUrlWidget> {
                               color: HexColor.fromHex('#E7F0FE'),
                               borderRadius: BorderRadius.circular(10)),
                           child: TextFormField(
+                            controller: _inputFieldTextController,
                             minLines: 1,
+
                             onChanged: (v) {
                               setState(() => _inputValue = v);
                             },
@@ -137,9 +146,24 @@ class _InputUrlWidgetState extends State<InputUrlWidget> {
                               }
                               return null;
                             },
-                            decoration: const InputDecoration(
+                            decoration:  InputDecoration(
+                                isDense: true,
+                                suffixIcon: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    clickableText("Paste", () async {
+                                      ClipboardData? clipboardData =
+                                      await Clipboard.getData(
+                                          Clipboard.kTextPlain);
+                                      if (clipboardData != null) {
+                                        _inputFieldTextController.text = clipboardData.text?.trim()??"";
+                                        setState(() => _inputValue = clipboardData.text?.trim()??"");
+                                      }
+                                    })
+                                  ],
+                                ),
                                 contentPadding:
-                                    EdgeInsets.symmetric(horizontal: 5),
+                                    EdgeInsets.symmetric(horizontal: 5, vertical: 8),
                                 errorBorder: InputBorder.none,
                                 hintText: ' Type URL',
                                 alignLabelWithHint: true,
@@ -211,7 +235,34 @@ class _InputUrlWidgetState extends State<InputUrlWidget> {
           )),
     );
   }
+
+
+  ///[clickableText] method to paste a text on the InputURLWidgetTextField
+  Widget clickableText(String text, void Function() onClick) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 0),
+      child: IconButton(
+        onPressed: () {
+          onClick();
+        },
+        icon: Text(
+          text,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.start,
+          style: const TextStyle(
+            fontSize: 16,
+            color: Color(0XFF2C14DD),
+            decoration: TextDecoration.none,
+            decorationColor: Color(0XFF2752E7),
+          ),
+        ),
+      ),
+    );
+  }
 }
+
+
+
 
 ///[UrlInputType] enum for input types
 enum UrlInputType {

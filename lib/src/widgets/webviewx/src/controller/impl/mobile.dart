@@ -133,8 +133,8 @@ class WebViewXController extends ChangeNotifier
         print("result: $result");
         if(result.isEmpty){
           print("result: Empty");
-          var result = await connector.runJavaScript(jsCode);
-          return result;
+          //var result = await connector.runJavaScript(jsCode);
+          //return result;
 
         }
         // (MOBILE ONLY) Unquotes response if necessary
@@ -149,20 +149,20 @@ class WebViewXController extends ChangeNotifier
           /// TODO: make sure this works on iOS
           // In the iOS version responses from JS to Dart come wrapped in single quotes (')
           // Note that the supported types are more limited because of connector.evaluateJavascript
-          var result = await connector.runJavaScript(jsCode);
-          return result;
+          //var result = await connector.runJavaScript(jsCode);
+          //return result;
         }
       }
 
-      return result;
+      //return result;
     }
     catch(e){
       // Handle cases where result is null or JavaScript fails
       if (true) {
         // Use runJavaScript for void JS functions
         print(e.toString());
-        var result = await connector.runJavaScript(jsCode);
-        return result;
+        //var result = await connector.runJavaScript(jsCode);
+        //return result;
       } else {
         // Rethrow other exceptions
         rethrow;

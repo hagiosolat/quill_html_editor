@@ -594,6 +594,7 @@ class ToolBarState extends State<ToolBar> {
                 controller: widget.controller,
                 type: UrlInputType.video,
                 onSubmit: (v) {
+                  print("submitted video once");
                   widget.controller.embedVideo(v);
                 },
               ),

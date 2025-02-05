@@ -576,7 +576,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
 
   /// a private method to un focus the editor
   Future _unFocus() async {
-    return await _webviewController.callJsMethod("unFocus", []);
+    return await _webviewController.callJsMethod("enableQuillEditor", []);
   }
 
   /// a private method to insert the Html text to the editor
@@ -895,6 +895,34 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
               }  
             }
             
+            function disableQuillEditor() {
+              document.querySelector('.ql-editor').setAttribute('contenteditable', 'false');
+            }
+
+            function enableQuillEditor() {
+                document.querySelector('.ql-editor').setAttribute('contenteditable', 'true');
+            }
+            
+            function forceKeyboardDismiss() {
+              let hiddenInput = document.createElement("input");
+              hiddenInput.style.position = "absolute";
+              hiddenInput.style.opacity = "0";
+              document.body.appendChild(hiddenInput);
+              hiddenInput.focus();
+              setTimeout(() => {
+                  hiddenInput.blur();
+                  document.body.removeChild(hiddenInput);
+              }, 50);
+            }
+            
+            function dismissKeyboard() {
+              if (document.activeElement) {
+                  document.activeElement.blur();
+              }
+              window.getSelection()?.removeAllRanges();
+           }
+
+            
             
           function replaceSelection(replaceText) {
               try{
@@ -1212,6 +1240,8 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                  if($kIsWeb){
                   //  GetVideoUrl(link);
                   } else {
+                    disableQuillEditor();
+                   
                     GetVideoUrl.postMessage(link);
                   }
                 // alert(`\${link}`);
@@ -1557,6 +1587,9 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                  if($kIsWeb){
                   //  GetVideoUrl(link);
                   } else {
+                  
+                    disableQuillEditor();
+                   
                     GetVideoUrl.postMessage(link);
                   }
                //  alert(`\${link}`);
@@ -1882,7 +1915,13 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
             }
             
             function embedVideo(videoUrl) {
-              var range = quilleditor.getSelection(true);
+              var range = quilleditor.getSelection(true);           
+              var formattedVideoUrl = videoUrl
+              
+              if (formattedVideoUrl.startsWith('http://')) {
+                  formattedVideoUrl = formattedVideoUrl.replace('http://', 'https://');
+              }
+              
               if(range) {
                 if($kIsWeb) {
                   quilleditor.insertEmbed(range.index, 'div', {                 
@@ -1891,7 +1930,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
 
                 } else {
                  quilleditor.insertEmbed(range.index, 'videoThumbnail', {
-                 url: videoUrl,
+                 url: formattedVideoUrl,
                  thumbnail: "https://hips.hearstapps.com/hmg-prod/images/bright-forget-me-nots-royalty-free-image-1677788394.jpg",
                  }, Quill.sources.USER); 
                 }           
