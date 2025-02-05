@@ -247,6 +247,8 @@ class ToolBar extends StatefulWidget {
 
   final bool? _isScrollable;
 
+  final Function(dynamic)? onBeforeVideoInserted;
+
   ///[ToolBar] widget to show the quill
   /// The toolbar items will be auto aligned based on the screen's width or height
   /// The behaviour of the widget's alignment is similar to [Wrap] widget
@@ -270,6 +272,7 @@ class ToolBar extends StatefulWidget {
     this.activeIconColor = Colors.blue,
     this.toolBarColor = Colors.white,
     this.mainAxisSize,
+    this.onBeforeVideoInserted,
   })  : assert(crossAxisAlignment is WrapCrossAlignment,
             "Please pass WrapCrossAlignment, instead of CrossAxisAlignment"),
         mainAxisAlignment = MainAxisAlignment.start,
@@ -300,6 +303,7 @@ class ToolBar extends StatefulWidget {
     this.mainAxisAlignment = MainAxisAlignment.start,
     this.mainAxisSize = MainAxisSize.min,
     this.textBaseline = TextBaseline.alphabetic,
+    this.onBeforeVideoInserted,
   })  : assert(crossAxisAlignment is CrossAxisAlignment,
             "Please pass CrossAxisAlignment, instead of WrapCrossAlignment"),
         spacing = 0.0,
@@ -594,6 +598,12 @@ class ToolBarState extends State<ToolBar> {
                 controller: widget.controller,
                 type: UrlInputType.video,
                 onSubmit: (v) {
+                  //TODO: submission for progress indicators
+                  //First communicate with the firebase
+                  // and then when the value is being returned
+                  //one can then check it and see the values to be
+                  //used.
+                  // widget.onBeforeVideoInserted!(true);
                   widget.controller.embedVideo(v);
                 },
               ),

@@ -1589,9 +1589,9 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
   //   };
   // }
 }
- VideoThumbnailBlot.blotName = 'videoThumbnail';
- VideoThumbnailBlot.tagName = 'div';
-   VideoThumbnailBlot.className= 'videoThumbnail';
+    VideoThumbnailBlot.blotName = 'videoThumbnail';
+    VideoThumbnailBlot.tagName = 'div';
+    VideoThumbnailBlot.className= 'videoThumbnail';
  Quill.register(VideoThumbnailBlot);   
 
               //  let Block = Quill.import('blots/block');
@@ -1799,7 +1799,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
           const modifiedHtml = await replaceVideoWithThumbnail(htmlString);
            //console.log(`\${modifiedHtml}`);
            console.log('*****&&&****&&&*****&&&*****&&&&&******&&&******&&&&&*****&&&&****&&&&****');
-          quilleditor.enable(true);
+          quilleditor.enable(false);
           quilleditor.clipboard.dangerouslyPasteHTML(modifiedHtml); 
            }    
     } catch (e) {
@@ -1841,6 +1841,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
             }
             
             function unFocus() {
+              console.log('testing unfocus something');
               quilleditor.root.blur()
               return '';
             }
@@ -1890,6 +1891,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                 }, Quill.sources.USER);
 
                 } else {
+                unFocus();
                  quilleditor.insertEmbed(range.index, 'videoThumbnail', {
                  url: videoUrl,
                  thumbnail: "https://hips.hearstapps.com/hmg-prod/images/bright-forget-me-nots-royalty-free-image-1677788394.jpg",

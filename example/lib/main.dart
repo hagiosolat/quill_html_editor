@@ -51,6 +51,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       fontSize: 18, color: Colors.black38, fontWeight: FontWeight.normal);
 
   bool _hasFocus = false;
+  bool isLoading = false;
 
   int selectedTextlength = 0;
   int selectedTextPosition = 0;
@@ -94,6 +95,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       selectedTextlength = 0;
     });
   }
+
 // function for total progress
   void _getTotalProgress() {
     /// Get the scroll Length
@@ -105,18 +107,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     });
   }
 
-
   // Listen to changes in the scroll position
 
 // This method will be called on every scroll event
-void _onScroll() {
-  setState(() {
-    _currentPosition = mobileScrollController.position.pixels;  // current position
-    _maxPosition = mobileScrollController.position.maxScrollExtent;
+  void _onScroll() {
+    setState(() {
+      _currentPosition =
+          mobileScrollController.position.pixels; // current position
+      _maxPosition = mobileScrollController.position.maxScrollExtent;
 
-    _progress = (_currentPosition / _maxPosition).abs();// max position
-  });
-}
+      _progress = (_currentPosition / _maxPosition).abs(); // max position
+    });
+  }
 
   void _updateTotalProgress() {
     if (videoProgressMap.isNotEmpty) {
@@ -337,6 +339,7 @@ void _onScroll() {
         resizeToAvoidBottomInset: true,
         body: kIsWeb
             //WEB VERSION EDITOR OUTLOOK
+
             ? CustomScrollView(
                 slivers: [
                   SliverToBoxAdapter(
@@ -378,7 +381,13 @@ void _onScroll() {
                           //Column(children: [//  Expanded(child:
                           Row(
                     children: [
-                      Flexible(flex: 3, child: editor()),
+                      Flexible(
+                          flex: 3,
+                          child: isLoading
+                              ? const Center(
+                                  child: CircularProgressIndicator(),
+                                )
+                              : editor()),
                       _comments.isEmpty
                           ? const SizedBox.shrink()
                           : Container(
@@ -432,7 +441,15 @@ void _onScroll() {
                     progress: _progress.toDouble(),
                     color: Colors.lightBlue,
                   ),
-                  Expanded(flex: 10, child: SingleChildScrollView(controller: mobileScrollController, child: editor())),
+                  Expanded(
+                      flex: 10,
+                      child: SingleChildScrollView(
+                          controller: mobileScrollController,
+                          child: isLoading
+                              ? const Center(
+                                  child: CircularProgressIndicator(),
+                                )
+                              : editor())),
                 ],
               ),
         bottomNavigationBar: kIsWeb
@@ -703,7 +720,7 @@ void _onScroll() {
             // print(
             //     'scrollTop is ${p0.scrollTop}, currentPosition ${p0.currentPosition}');
             setState(() {
-             // _progress = p0.currentPosition ?? 0.0;
+              // _progress = p0.currentPosition ?? 0.0;
               scrollength = p0.maxScroll ?? 0.0;
               totalProgressMap['scrollPosition'] = p0.scrollTop;
 
@@ -738,6 +755,13 @@ void _onScroll() {
 
   Widget toolbar() {
     return ToolBar(
+      onBeforeVideoInserted: (message) {
+        if (message != null) {
+          setState(() {
+            isLoading = message as bool;
+          });
+        }
+      },
       toolBarColor: _toolbarColor,
       padding: const EdgeInsets.all(8),
       iconSize: 25,
