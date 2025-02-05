@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -178,6 +177,7 @@ class QuillHtmlEditor extends StatefulWidget {
   /// [videosDuration] to get the duration of the saved videos
   final Map<String, dynamic>? videosDuration;
 
+  /// [watchedVideo] to track the progress of the video
   final Function(String)? watchedVideo;
 
   @override
@@ -576,7 +576,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
 
   /// a private method to un focus the editor
   Future _unFocus() async {
-    return await _webviewController.callJsMethod("enableQuillEditor", []);
+    return await _webviewController.callJsMethod("unFocus", []);
   }
 
   /// a private method to insert the Html text to the editor
@@ -672,6 +672,10 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
   Future _setVideoPosition({required Map<String, dynamic> videos}) async {
     return await _webviewController
         .callJsMethod("setVideoPosition", [jsonEncode(videos)]);
+  }
+
+  Future _enableQuillEditor() async {
+    return await _webviewController.callJsMethod("enableQuillEditor", []);
   }
 
   ///get page
@@ -900,6 +904,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
             }
 
             function enableQuillEditor() {
+              console.log('###################################################enable quill editor');
                 document.querySelector('.ql-editor').setAttribute('contenteditable', 'true');
             }
             
@@ -1874,7 +1879,6 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
             }
             
             function unFocus() {
-              console.log('testing unfocus something');
               quilleditor.root.blur()
               return '';
             }
@@ -2524,6 +2528,11 @@ class QuillEditorController {
   /// [setVideoPosition] method to set the Last saved Video Position
   void setVideoPosition(Map<String, dynamic> videos) async {
     await _editorKey?.currentState?._setVideoPosition(videos: videos);
+  }
+
+  /// [enableQuillEditor] method to enable Quill Editor after playing the video
+  void enableQuillEditor() async {
+    await _editorKey?.currentState?._enableQuillEditor();
   }
 }
 
