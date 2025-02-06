@@ -1262,7 +1262,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                   WatchVideo.postMessage(link);  
                   setTimeout(() => {
                     unFocus();
-                  }, 100);                      
+                  }, 200);                      
                 }
               });
 
@@ -1886,7 +1886,8 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
             }
             
             function unFocus() {
-              console.log('Trying to unfocus the quill');
+              console.log('Trying to unfocus the quill');  
+              document.activeElement.blur();
               quilleditor.root.blur()
               return '';
             }
