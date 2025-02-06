@@ -674,9 +674,6 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
         .callJsMethod("setVideoPosition", [jsonEncode(videos)]);
   }
 
-  Future _enableQuillEditor() async {
-    return await _webviewController.callJsMethod("enableQuillEditor", []);
-  }
 
   ///get page
   // String get quillPage => _getQuillPage(width: MediaQuery.of(context).size.width);
@@ -2541,11 +2538,6 @@ class QuillEditorController {
   /// [setVideoPosition] method to set the Last saved Video Position
   void setVideoPosition(Map<String, dynamic> videos) async {
     await _editorKey?.currentState?._setVideoPosition(videos: videos);
-  }
-
-  /// [enableQuillEditor] method to enable Quill Editor after playing the video
-  void enableQuillEditor() async {
-    await _editorKey?.currentState?._enableQuillEditor();
   }
 }
 
