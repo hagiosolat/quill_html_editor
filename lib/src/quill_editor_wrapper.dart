@@ -1246,7 +1246,9 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                  if($kIsWeb){
                   //  GetVideoUrl(link);
                   } else {
-                    disableQuillEditor();
+                    setTimeout(() => {
+                    unFocus();
+                  }, 200);  
                    
                     GetVideoUrl.postMessage(link);
                   }
@@ -1597,7 +1599,9 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                   //  GetVideoUrl(link);
                   } else {
                   
-                    disableQuillEditor();
+                    setTimeout(() => {
+                    unFocus();
+                  }, 200);  
                    
                     GetVideoUrl.postMessage(link);
                   }
