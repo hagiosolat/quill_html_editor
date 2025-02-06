@@ -900,6 +900,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
             }
             
             function disableQuillEditor() {
+              console.log('###################################################disable quill editor');
               document.querySelector('.ql-editor').setAttribute('contenteditable', 'false');
             }
 
@@ -1258,8 +1259,10 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
                if($kIsWeb){
                 //  WatchVideo(link);
                 } else {
-                   unFocus();
-                  WatchVideo.postMessage(link);
+                  WatchVideo.postMessage(link);  
+                  setTimeout(() => {
+                    unFocus();
+                  }, 100);                      
                 }
               });
 
@@ -1868,9 +1871,12 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
             function requestFocus() {
               try{
               var htmlString = quilleditor.root.innerHTML;
+              document.querySelector('.ql-editor').setAttribute('contenteditable', 'true');
                setTimeout(() => {
                     quilleditor.setSelection(htmlString.length + 1, htmlString.length + 1);
                     quilleditor.focus();
+                 //  document.querySelector('.ql-editor').setAttribute('contenteditable', 'true');
+
                }, 600);
               }catch(e){
                 console.log('requestFocus',e);
