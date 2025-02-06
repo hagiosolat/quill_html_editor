@@ -246,8 +246,7 @@ class ToolBar extends StatefulWidget {
   final TextBaseline? textBaseline;
 
   final bool? _isScrollable;
-
-  /// to get the loading of the application when Application
+  /// to get the loading of the application when Application 
   /// is being sent [onBeforeVideoInserted]
   final Function(dynamic)? onBeforeVideoInserted;
 

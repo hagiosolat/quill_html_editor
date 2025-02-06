@@ -163,10 +163,12 @@ class WebViewXController extends ChangeNotifier
         print(e.toString());
         //var result = await connector.runJavaScript(jsCode);
         //return result;
-      } else {
-        // Rethrow other exceptions
-        rethrow;
       }
+      
+      //  else {
+      //   // Rethrow other exceptions
+      //   rethrow;
+      // }
     }
   }
 
