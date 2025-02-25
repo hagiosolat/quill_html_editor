@@ -211,7 +211,7 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
     _encodedStyle = Uri.encodeFull(_fontFamily);
     isEnabled = widget.isEnabled;
     _currentHeight = widget.minHeight;
-    print(_currentHeight);
+    print("The current height is this ${_currentHeight}");
 
     super.initState();
   }
@@ -673,7 +673,6 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
     return await _webviewController
         .callJsMethod("setVideoPosition", [jsonEncode(videos)]);
   }
-
 
   ///get page
   // String get quillPage => _getQuillPage(width: MediaQuery.of(context).size.width);
@@ -1833,12 +1832,14 @@ class QuillHtmlEditorState extends State<QuillHtmlEditor> {
     console.log('*****&&&****&&&*****&&&*****&&&&&******&&&******&&&&&*****&&&&****&&&&****');
     try {
            if($kIsWeb) {
+            console.log('**********TESTING THE TIMING TIMING OF THE WEB VERSION *********');
               quilleditor.enable(false);
               console.log('Testing the web rendering of this code');
               const moddifiedHtml = await wrapMediaWithDiv(htmlString);
               console.log(`\${moddifiedHtml}`);
             quilleditor.clipboard.dangerouslyPasteHTML(moddifiedHtml); 
            } else {
+           console.log('######TESTING THE TIMING TIMING OF THE MOBILE VERSION##########');
           const modifiedHtml = await replaceVideoWithThumbnail(htmlString);
            //console.log(`\${modifiedHtml}`);
            console.log('*****&&&****&&&*****&&&*****&&&&&******&&&******&&&&&*****&&&&****&&&&****');
